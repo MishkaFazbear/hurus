@@ -114,7 +114,7 @@ const skins = [
     {n: "AK-47 | Neon Rider", r: "epic", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvVWLxgb2VaDeU9L7JERaduIfcDRcBo-oBFw&s"},
     {n: "M4A4 | Howl", r: "legendary", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVudeuZU4_u5OKoWkAx2VXzHaIwowEaosrQQ&s"},
     {n: "Glock-18 | Fade", r: "rare", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXawvlE7ptxbIp-WiCbyqRL-CRVOKKthwa1A&s"},
-    {n: "P250 | Sand Dune", r: "common", img: "https://pub-5f12f7508ff04ae5925853dee0438460.r2.dev/data/images/wiki_gf1Kc6S_preview.png"}
+    {n: "P250 | Sand Dune", r: "common", img: "https://pub-5f12f7508ff04ae5925853dee0438460.r2.dev/data/images/wiki_gf1Kc6S_preview.png "}
 ];
 
 window.openCase = () => {
@@ -150,7 +150,7 @@ function updateInventory() {
     const items = Object.values(currentUser.inventory);
     grid.innerHTML = items.map(item => `
         <div class="inventory-item skin-${item.r}">
-            <div class="item-icon">${item.img}</div>
+            <div class="item-icon"><img src="${item.img}"></div>
             <div class="item-name">${item.n}</div>
         </div>
     `).join('');
