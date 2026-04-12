@@ -19,14 +19,13 @@
 body { background-color: var(--bg); color: var(--text); font-family: 'Montserrat', sans-serif; margin: 0; min-height: 100vh; overflow-x: hidden; }
 .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; width: 100%; }
 
-/* БАДЖИ */
+/* ЦВЕТА РОЛЕЙ (БАДЖИ) */
 .badge { font-size: 10px; padding: 3px 7px; border-radius: 4px; text-transform: uppercase; font-weight: 800; color: #fff !important; }
 .badge-admin { background-color: var(--admin-color); box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
 .badge-moder { background-color: var(--moder-color); }
 .badge-vip { background-color: var(--vip-color); color: #000 !important; }
 .badge-user { background-color: #444; }
 
-/* HEADER */
 header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; }
 .header-flex { height: 80px; display: flex; justify-content: space-between; align-items: center; }
 .logo { font-weight: 800; font-size: 1.5rem; cursor: pointer; }
@@ -36,15 +35,61 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .main-nav button { background: none; border: none; color: var(--text-dim); font-weight: 600; cursor: pointer; padding: 10px 15px; transition: 0.3s; }
 .main-nav button.active { color: #fff; text-shadow: 0 0 10px var(--primary); }
 
-/* ПРОФИЛЬ */
-.profile-info-block { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.05); padding: 6px 15px 6px 6px; border-radius: 50px; border: 1px solid var(--border); }
-.profile-text-data { display: flex; flex-direction: column; }
-.profile-nick { font-weight: 800; font-size: 14px; }
-.profile-balance { color: var(--success); font-size: 12px; font-weight: 700; }
-.profile-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); box-shadow: 0 0 10px rgba(157, 80, 187, 0.3); }
-.profile-avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; background: #000; display: flex; justify-content: center; align-items: center; color: var(--text-dim); border: 2px solid var(--primary); }
-.btn-logout { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 16px; margin-left: 5px; transition: 0.3s; }
-.btn-logout:hover { color: #fff; transform: scale(1.1); }
+/* БЛОК ПРОФИЛЯ */
+.profile-info-block { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    background: rgba(255,255,255,0.05); 
+    padding: 6px 15px 6px 6px; 
+    border-radius: 50px; 
+    border: 1px solid var(--border); 
+}
+.profile-text-data {
+    display: flex;
+    flex-direction: column;
+}
+.profile-nick { 
+    font-weight: 800; 
+    font-size: 14px;
+}
+.profile-balance { 
+    color: var(--success); 
+    font-size: 12px; 
+    font-weight: 700; 
+}
+.profile-avatar { 
+    width: 40px; 
+    height: 40px; 
+    border-radius: 50%; 
+    object-fit: cover; 
+    border: 2px solid var(--primary);
+    box-shadow: 0 0 10px rgba(157, 80, 187, 0.3);
+}
+.profile-avatar-placeholder {
+    width: 40px; 
+    height: 40px; 
+    border-radius: 50%; 
+    background: #000;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    color: var(--text-dim);
+    border: 2px solid var(--primary);
+}
+.btn-logout { 
+    background: none; 
+    border: none; 
+    color: var(--danger); 
+    cursor: pointer; 
+    font-size: 16px; 
+    margin-left: 5px;
+    transition: 0.3s;
+}
+.btn-logout:hover {
+    color: #fff;
+    transform: scale(1.1);
+}
 
 .main-layout { display: grid; grid-template-columns: 1fr 340px; gap: 30px; margin-top: 40px; }
 
@@ -57,60 +102,149 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .progress-bg { background: #222; height: 6px; border-radius: 10px; margin: 15px 0 5px; }
 .progress-bar { background: var(--primary-grad); height: 100%; border-radius: 10px; box-shadow: 0 0 10px var(--primary); }
 
-/* ЧАТ (ОБНОВЛЕНО) */
+/* МАГАЗИН */
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 20px; }
+.shop-item { background: var(--card); border-radius: 24px; padding: 40px 30px; text-align: center; position: relative; border: 1px solid var(--border); transition: 0.4s; overflow: hidden; }
+.shop-item:hover { transform: translateY(-10px); border-color: var(--primary); }
+.shop-badge { position: absolute; top: 20px; right: -30px; background: var(--primary-grad); color: #fff; padding: 5px 40px; transform: rotate(45deg); font-size: 10px; font-weight: 800; }
+.shop-icon { font-size: 3rem; margin-bottom: 20px; color: var(--primary); }
+.shop-price { font-size: 2.5rem; font-weight: 800; margin-bottom: 25px; }
+.shop-price span { font-size: 1rem; color: var(--text-dim); }
+.shop-features { list-style: none; padding: 0; margin-bottom: 35px; text-align: left; }
+.shop-features li { margin-bottom: 12px; font-size: 14px; color: var(--text-dim); display: flex; align-items: center; gap: 10px; }
+.shop-features i { color: var(--success); }
+.btn-buy { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--primary-grad); color: #fff; font-weight: 800; cursor: pointer; }
+
+/* ЧАТ */
 .chat-wrapper { background: var(--card); border-radius: 20px; border: 1px solid var(--border); height: 650px; display: flex; flex-direction: column; overflow: hidden; }
-.chat-header { padding: 10px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; background: rgba(0,0,0,0.2); overflow-x: auto; }
-
-.chat-tab { 
-    background: rgba(255,255,255,0.03); 
-    border: 1px solid var(--border); 
-    color: var(--text-dim); 
-    padding: 8px 12px; 
-    border-radius: 8px; 
-    font-weight: 800; 
-    font-size: 11px; 
-    cursor: pointer; 
-    white-space: nowrap;
-    transition: 0.2s;
-}
-.chat-tab:hover { background: rgba(255,255,255,0.08); }
-.chat-tab.active { background: var(--primary-grad); color: #fff; border-color: transparent; }
-.chat-tab.tab-cats { color: #ff66b2; border-color: rgba(255, 102, 178, 0.2); }
-.chat-tab.tab-dm { color: var(--success); border-color: rgba(16, 185, 129, 0.2); }
-
+.chat-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: flex-start; gap: 15px; font-weight: 800; background: rgba(0,0,0,0.2); }
 .chat-body { flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; }
-.msg { margin-bottom: 12px; }
-.msg-author { font-weight: 800; cursor: pointer; transition: 0.2s; margin: 0 5px; }
-.msg-author:hover { color: var(--primary); text-decoration: underline; }
-
+.msg { margin-bottom: 10px; line-height: 1.5; }
 .chat-footer { padding: 15px; display: flex; gap: 10px; background: rgba(0,0,0,0.3); }
 .chat-footer input { flex: 1; background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 10px; }
 .chat-footer button { background: var(--primary-grad); border: none; color: #fff; width: 45px; border-radius: 10px; cursor: pointer; }
 
-/* АДМИНКА И ПОИСК (ОБНОВЛЕНО) */
-.admin-search-wrapper { margin-bottom: 20px; position: relative; }
-.admin-search-wrapper input { width: 100%; padding: 14px 15px 14px 45px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; color: #fff; font-family: inherit; }
-.admin-search-wrapper i { position: absolute; left: 18px; top: 17px; color: var(--text-dim); }
-
+/* STAFF */
+.btn-ok { background: var(--success); color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+.btn-del { background: none; color: var(--danger); border: none; cursor: pointer; font-size: 16px; }
 .staff-table { width: 100%; border-collapse: collapse; }
 .staff-table th { text-align: left; padding: 15px; color: var(--text-dim); font-size: 12px; }
 .staff-table td { padding: 15px; border-bottom: 1px solid var(--border); }
 
-/* РЕАКЦИИ */
-.reactions-container { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
-.react-item { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); padding: 3px 8px; border-radius: 8px; display: flex; align-items: center; gap: 5px; cursor: pointer; transition: 0.2s; user-select: none; }
-.react-item.active { background: rgba(157, 80, 187, 0.15); border-color: var(--primary); }
-.btn-add-emoji { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: var(--text-dim); width: 26px; height: 26px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+/* STEAM & DIVIDER */
+.auth-divider { margin: 20px 0; text-align: center; position: relative; border-bottom: 1px solid var(--border); height: 10px; }
+.auth-divider span { background: var(--card); padding: 0 15px; color: var(--text-dim); font-size: 10px; font-weight: 800; position: relative; top: 2px; }
+.btn-steam { background: #171a21; color: #fff; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgba(255,255,255,0.1); font-size: 13px; cursor: pointer; padding: 12px; border-radius: 10px; transition: 0.3s; }
+.btn-steam:hover { background: #2a475e; box-shadow: 0 0 20px rgba(42, 71, 94, 0.4); transform: translateY(-2px); }
 
 /* ОБЩЕЕ */
 .btn { padding: 12px 25px; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.3s; }
-.btn-primary { background: var(--primary-grad); color: #fff; }
+.btn-primary { background: var(--primary-grad); color: #fff; box-shadow: 0 4px 15px rgba(157, 80, 187, 0.3); }
+.w-100 { width: 100%; }
 .card { background: var(--card); border-radius: 20px; padding: 25px; border: 1px solid var(--border); }
 .page-section { display: none; }
 .page-section.active { display: block; animation: fadeIn 0.4s; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* Контейнер реакций */
+.reactions-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-top: 10px;
+}
+
+/* Сама плашка реакции */
+.react-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: 0.2s;
+    user-select: none;
+}
+.react-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+}
+.react-item.active {
+    background: rgba(157, 80, 187, 0.15);
+    border-color: var(--primary);
+}
+.react-emoji { font-size: 14px; }
+.react-count { font-size: 12px; font-weight: 700; color: var(--text-dim); }
+.react-item.active .react-count { color: var(--primary); }
+
+/* Кнопка добавления эмодзи */
+.btn-add-emoji {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: 0.2s;
+}
+.btn-add-emoji:hover {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+/* Стили для глобального пикера эмодзи */
+.emoji-picker-popup {
+    display: none;
+    position: absolute;
+    z-index: 3000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    border-radius: 8px;
+    animation: fadeIn 0.2s ease;
+}
+
+emoji-picker {
+    --background: var(--card);
+    --border-color: var(--border);
+    --indicator-color: var(--primary);
+    --input-border-color: var(--border);
+    --button-hover-background: rgba(255, 255, 255, 0.1);
+    height: 350px;
+    max-width: 100vw;
+}
+
+/* Подсказка имен (браузерная) */
+.react-item[title]:hover::after {
+    content: attr(title);
+}
+
+/* МОДАЛКИ */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(5px); }
 .modal-card { background: var(--card); padding: 40px; border-radius: 25px; width: 350px; border: 1px solid var(--border); }
+.modal-tabs { display: flex; margin-bottom: 25px; }
+.modal-tabs button { flex: 1; padding: 10px; background: none; border: none; color: var(--text-dim); cursor: pointer; font-weight: 800; border-bottom: 2px solid transparent; }
+.modal-tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+.input-field { margin-bottom: 15px; position: relative; }
+.input-field i { position: absolute; left: 15px; top: 15px; color: var(--text-dim); }
+.input-field input { width: 100%; padding: 15px 15px 15px 45px; background: #000; border: 1px solid var(--border); border-radius: 12px; color: #fff; }
 
 #toast { position: fixed; bottom: 30px; right: 30px; background: var(--primary); color: #fff; padding: 15px 30px; border-radius: 12px; display: none; z-index: 3000; font-weight: 700; }
+
+/* АДАПТИВНОСТЬ */
+@media (max-width: 768px) {
+    .header-flex { flex-direction: column; height: auto; padding: 15px 0; gap: 15px; }
+    .main-nav { flex-wrap: wrap; justify-content: center; }
+    .main-layout { grid-template-columns: 1fr; margin-top: 20px; }
+    .chat-wrapper { height: 500px; margin-bottom: 20px; }
+}
+@media (max-width: 480px) {
+    .modal-card { width: 90%; padding: 30px 20px; }
+}

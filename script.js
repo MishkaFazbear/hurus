@@ -21,12 +21,19 @@ let allLogs = [];
 let authMode = 'login';
 let activeReactMsgId = null; 
 
-// --- ПЕРЕМЕННЫЕ ЧАТА ---
+// --- ПЕРЕМЕННЫЕ ДЛЯ ЧАТА ---
 let currentChatTab = 'global';
-let dmTarget = null; // Ник собеседника для ЛС
 let globalMessages = {};
 let catMessages = {};
 const catUsers = ['mishkafazbear', 'amonphous', 'SharizMound'];
+
+// --- 1. ОБРАБОТКА ВОЗВРАТА ИЗ STEAM ---
+const urlParams = new URLSearchParams(window.location.search);
+const steamNick = urlParams.get('nickname') || urlParams.get('name'); 
+if (steamNick) {
+    localStorage.setItem('hurus_session', steamNick);
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
 
 // --- СИНХРОНИЗАЦИЯ С БД ---
 onValue(ref(db, '/'), (snapshot) => {
@@ -38,6 +45,8 @@ onValue(ref(db, '/'), (snapshot) => {
         globalMessages = data.messages || {};
         catMessages = data.cat_messages || {};
         
+        renderChat(currentChatTab === 'global' ? globalMessages : catMessages);
+        
         const savedNick = localStorage.getItem('hurus_session');
         if (savedNick) {
             const found = allUsers.find(u => u.name === savedNick);
@@ -47,61 +56,49 @@ onValue(ref(db, '/'), (snapshot) => {
             }
         }
         
-        refreshChatUI(data);
-        
-        if (document.getElementById('admin')?.classList.contains('active')) {
+        if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) {
             renderAdmin();
         }
     }
 });
 
-// --- ЛОГИКА ЧАТОВ И ЛС ---
-function refreshChatUI(data) {
-    if (currentChatTab === 'global') renderChat(globalMessages);
-    else if (currentChatTab === 'cats') renderChat(catMessages);
-    else if (currentChatTab === 'dm' && dmTarget) {
-        const pair = [currentUser.name, dmTarget].sort().join('_');
-        renderChat(data.pms ? data.pms[pair] || {} : {});
-    }
+// --- СИСТЕМА ЛОГОВ ---
+function addLog(text) {
+    return push(ref(db, 'logs'), { text, time: Date.now() });
 }
 
-window.switchChat = (tab, target = null) => {
+function renderLogs() {
+    const logsBox = document.getElementById('adminLogs');
+    if (!logsBox) return;
+    
+    if (allLogs.length === 0) {
+        logsBox.innerHTML = '<div style="padding: 15px; color: var(--text-dim);">Логов пока нет...</div>';
+        return;
+    }
+
+    logsBox.innerHTML = allLogs.map(l => {
+        const timeStr = new Date(l.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        return `<div style="padding: 8px 15px; border-bottom: 1px solid var(--border); font-size: 13px; color: #ccc;">
+            <span style="color: var(--primary);">[${timeStr}]</span> ${l.text}
+        </div>`;
+    }).join('');
+}
+
+// --- ЧАТ И РЕАКЦИИ ---
+window.switchChat = (tab) => {
     currentChatTab = tab;
-    if (target) dmTarget = target;
     
-    renderChatTabs();
+    document.getElementById('tab-global').style.color = tab === 'global' ? 'var(--primary)' : 'var(--text-dim)';
+    document.getElementById('tab-global').style.borderBottom = tab === 'global' ? '2px solid var(--primary)' : 'none';
     
-    // Принудительный рендер текущего состояния
-    if (tab === 'global') renderChat(globalMessages);
-    else if (tab === 'cats') renderChat(catMessages);
-    else if (tab === 'dm') {
-        const pair = [currentUser.name, dmTarget].sort().join('_');
-        get(ref(db, `pms/${pair}`)).then(s => renderChat(s.val() || {}));
+    const catTab = document.getElementById('tab-cats');
+    if (catTab) {
+        catTab.style.color = tab === 'cats' ? '#ff66b2' : 'var(--text-dim)';
+        catTab.style.borderBottom = tab === 'cats' ? '2px solid #ff66b2' : 'none';
     }
+
+    renderChat(tab === 'global' ? globalMessages : catMessages);
 };
-
-window.startDM = (name) => {
-    if (!currentUser) return notify("Войдите в аккаунт!");
-    if (name === currentUser.name) return;
-    switchChat('dm', name);
-};
-
-function renderChatTabs() {
-    const box = document.getElementById('chatTabs');
-    if (!box) return;
-
-    let html = `<div class="chat-tab ${currentChatTab === 'global' ? 'active' : ''}" onclick="switchChat('global')">Глобальный</div>`;
-    
-    if (currentUser && catUsers.includes(currentUser.name)) {
-        html += `<div class="chat-tab tab-cats ${currentChatTab === 'cats' ? 'active' : ''}" onclick="switchChat('cats')">Котики <3</div>`;
-    }
-
-    if (dmTarget) {
-        html += `<div class="chat-tab tab-dm ${currentChatTab === 'dm' ? 'active' : ''}" onclick="switchChat('dm', '${dmTarget}')">ЛС: ${dmTarget}</div>`;
-    }
-    
-    box.innerHTML = html;
-}
 
 function renderChat(messagesObj) {
     const box = document.getElementById('chatMessages');
@@ -110,28 +107,37 @@ function renderChat(messagesObj) {
     box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => {
         const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const userRole = m.r || 'user';
+        const roleName = userRole.toUpperCase();
         
         let reactHtml = '';
         if (m.reactions) {
             reactHtml = Object.entries(m.reactions).map(([emoji, users]) => {
-                const count = Object.keys(users).length;
+                const userList = Object.keys(users);
+                const count = userList.length;
                 const hasMyReact = currentUser && users[currentUser.name] ? 'active' : '';
-                return `<div class="react-item ${hasMyReact}" onclick="toggleReaction('${m.id}', '${emoji}')"><span class="react-emoji">${emoji}</span><span class="react-count">${count}</span></div>`;
+                return `
+                    <div class="react-item ${hasMyReact}" onclick="toggleReaction('${m.id}', '${emoji}')" title="${userList.join(', ')}">
+                        <span class="react-emoji">${emoji}</span>
+                        <span class="react-count">${count}</span>
+                    </div>
+                `;
             }).join('');
         }
 
         return `
             <div class="msg">
                 <div class="msg-header">
-                    <span class="badge badge-${userRole}">${userRole}</span>
-                    <span class="msg-author" onclick="startDM('${m.u}')">${m.u}</span>
+                    <span class="badge badge-${userRole}">${roleName}</span>
+                    <span class="msg-author">${m.u}</span>
                     <span class="msg-time">${timeStr}</span>
                 </div>
                 <div class="msg-text">${m.t}</div>
                 <div class="msg-footer">
                     <div class="reactions-container">
                         ${reactHtml}
-                        <button class="btn-add-emoji" onclick="openEmojiPicker('${m.id}', event)"><i class="fas fa-plus"></i></button>
+                        <button class="btn-add-emoji" onclick="openEmojiPicker('${m.id}', event)">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -140,37 +146,103 @@ function renderChat(messagesObj) {
     box.scrollTop = box.scrollHeight;
 }
 
+window.toggleReaction = async (msgId, emoji) => {
+    if (!currentUser) return notify("Сначала войдите в аккаунт!");
+    const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
+    const reactRef = ref(db, `${dbPath}/${msgId}/reactions/${emoji}/${currentUser.name}`);
+    const snap = await get(reactRef);
+    if (snap.exists()) {
+        remove(reactRef);
+        addLog(`Пользователь ${currentUser.name} убрал реакцию ${emoji} с сообщения`);
+    } else {
+        set(reactRef, true);
+        addLog(`Пользователь ${currentUser.name} поставил реакцию ${emoji} на сообщение`);
+    }
+};
+
 window.sendChatMessage = () => {
     const inp = document.getElementById('chatInput');
     if (!currentUser || !inp.value.trim()) return;
     
-    let path = 'messages';
-    if (currentChatTab === 'cats') path = 'cat_messages';
-    if (currentChatTab === 'dm' && dmTarget) {
-        const pair = [currentUser.name, dmTarget].sort().join('_');
-        path = `pms/${pair}`;
-    }
-
-    push(ref(db, path), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
+    const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
+    push(ref(db, dbPath), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
+    
+    addLog(`Пользователь ${currentUser.name} написал в ${currentChatTab === 'global' ? 'глобальный чат' : 'чат котиков'}: ${inp.value}`);
     inp.value = '';
 };
 
-// --- АДМИНКА С ПОИСКОМ ---
+// --- АВТОРИЗАЦИЯ И ПРОФИЛЬ ---
+window.setAuthMode = (mode) => {
+    authMode = mode;
+    document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+    document.getElementById('tab-reg').classList.toggle('active', mode === 'reg');
+    const btn = document.querySelector('.modal-form .btn-primary');
+    if (btn) btn.innerText = mode === 'login' ? 'ВЫПОЛНИТЬ' : 'ЗАРЕГИСТРИРОВАТЬСЯ';
+};
+
+window.handleAuth = async () => {
+    const l = document.getElementById('authLogin').value.trim();
+    const p = document.getElementById('authPass').value.trim();
+    if (!l || !p) return notify("Заполните поля!");
+
+    if (authMode === 'login') {
+        const found = allUsers.find(u => u.name === l && u.pass === p);
+        if (!found) return notify("Ошибка входа!");
+        localStorage.setItem('hurus_session', found.name);
+        await addLog(`Пользователь ${found.name} вошел в систему`);
+    } else {
+        if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
+        await push(ref(db, 'users'), { name: l, pass: p, balance: 0, role: 'user', avatar: '' });
+        localStorage.setItem('hurus_session', l);
+        await addLog(`Новый пользователь ${l} зарегистрировался`);
+    }
+    
+    setTimeout(() => { location.reload(); }, 200);
+};
+
+window.loginWithSteam = () => window.location.href = "https://hurus-backend.onrender.com/auth/steam";
+window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
+
+function updateUI() {
+    const isAdmin = ['admin', 'moder'].includes(currentUser.role);
+    document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
+    
+    document.getElementById('authZone').innerHTML = `
+        <div class="profile-info-block">
+            ${currentUser.avatar ? `<img src="${currentUser.avatar}" class="profile-avatar">` : '<div class="profile-avatar-placeholder"><i class="fas fa-user"></i></div>'}
+            <div class="profile-text-data">
+                <div class="profile-nick">${currentUser.name}</div>
+                <div class="profile-balance">${currentUser.balance || 0} ₽</div>
+            </div>
+            <button class="btn-logout" onclick="logout()" title="Выйти"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    `;
+
+    const chatTabs = document.getElementById('chatTabs');
+    if (catUsers.includes(currentUser.name)) {
+        if (!document.getElementById('tab-cats')) {
+            chatTabs.innerHTML += `<button id="tab-cats" onclick="switchChat('cats')" style="background: none; border: none; color: var(--text-dim); cursor: pointer; font-weight: 800; padding: 5px; margin-left: 10px;">Чат Котиков <3</button>`;
+        }
+    } else {
+        const catTab = document.getElementById('tab-cats');
+        if (catTab) catTab.remove();
+        if (currentChatTab === 'cats') switchChat('global');
+    }
+}
+
+// --- ПАНЕЛЬ УПРАВЛЕНИЯ (ADMIN) ---
 window.renderAdmin = () => {
     const list = document.getElementById('adminUserList');
-    const searchVal = document.getElementById('userSearch')?.value.toLowerCase() || "";
     if (!list) return;
     
-    const filtered = allUsers.filter(u => u.name.toLowerCase().includes(searchVal));
-
-    list.innerHTML = filtered.map(u => `
+    list.innerHTML = allUsers.map(u => `
         <tr>
             <td>${u.name}</td>
             <td style="color: var(--success); font-weight: bold;">${u.balance || 0} ₽</td>
             <td>
                 <div style="display:flex; gap:5px; align-items:center;">
-                    <input type="number" id="balInput_${u.uid}" placeholder="+" style="width: 60px; background: #000; border: 1px solid var(--border); color: #fff; padding: 5px; border-radius: 5px;">
-                    <button class="btn-ok" onclick="addBalance('${u.uid}')"><i class="fas fa-plus"></i></button>
+                    <input type="number" id="balInput_${u.uid}" placeholder="Сумма" style="width: 75px; background: #000; border: 1px solid var(--border); color: #fff; padding: 6px; border-radius: 6px; outline:none;">
+                    <button class="btn-ok" onclick="addBalance('${u.uid}')" title="Выдать"><i class="fas fa-plus"></i></button>
                 </div>
             </td>
             <td>
@@ -182,79 +254,52 @@ window.renderAdmin = () => {
                 </select>
             </td>
             <td>
-                <button class="btn-del" onclick="deleteUser('${u.uid}')"><i class="fas fa-trash"></i></button>
+                <button class="btn-del" onclick="deleteUser('${u.uid}')" title="Удалить пользователя"><i class="fas fa-trash"></i></button>
             </td>
         </tr>
     `).join('');
     
-    renderLogsUI();
+    renderLogs();
 };
 
-// --- ОСТАЛЬНАЯ ЛОГИКА ---
 window.addBalance = (uid) => {
     const inp = document.getElementById(`balInput_${uid}`);
     const amount = parseInt(inp.value);
-    if (isNaN(amount) || amount <= 0) return;
+    if (isNaN(amount) || amount <= 0) return notify("Введите корректную сумму!");
+
     const u = allUsers.find(user => user.uid === uid);
-    update(ref(db, `users/${uid}`), { balance: (u.balance || 0) + amount });
-    push(ref(db, 'logs'), { text: `Админ ${currentUser.name} выдал ${amount}₽ для ${u.name}`, time: Date.now() });
-    inp.value = '';
+    if (u) {
+        update(ref(db, `users/${uid}`), { balance: (u.balance || 0) + amount });
+        addLog(`Администратор ${currentUser.name} выдал ${amount} ₽ пользователю ${u.name}`);
+        notify(`Успешно выдано ${amount} ₽`);
+        inp.value = '';
+    }
 };
 
 window.changeRole = (uid, newRole) => {
+    const u = allUsers.find(user => user.uid === uid);
     update(ref(db, `users/${uid}`), { role: newRole });
+    addLog(`Администратор ${currentUser.name} изменил роль ${u.name} на ${newRole.toUpperCase()}`);
 };
 
 window.deleteUser = (uid) => {
-    if (confirm("Удалить игрока?")) remove(ref(db, `users/${uid}`));
-};
-
-function renderLogsUI() {
-    const box = document.getElementById('adminLogs');
-    if (box) box.innerHTML = allLogs.map(l => `<div style="padding: 8px 15px; border-bottom: 1px solid var(--border); font-size: 12px;"><span style="color: var(--primary);">[${new Date(l.time).toLocaleTimeString()}]</span> ${l.text}</div>`).join('');
-}
-
-window.handleAuth = async () => {
-    const l = document.getElementById('authLogin').value.trim();
-    const p = document.getElementById('authPass').value.trim();
-    if (!l || !p) return notify("Заполните поля!");
-
-    if (authMode === 'login') {
-        const found = allUsers.find(u => u.name === l && u.pass === p);
-        if (!found) return notify("Ошибка!");
-        localStorage.setItem('hurus_session', found.name);
-    } else {
-        if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
-        await push(ref(db, 'users'), { name: l, pass: p, balance: 0, role: 'user', avatar: '' });
-        localStorage.setItem('hurus_session', l);
+    const u = allUsers.find(user => user.uid === uid);
+    if (confirm(`Удалить аккаунт ${u.name}? Это действие нельзя отменить.`)) {
+        remove(ref(db, `users/${uid}`));
+        addLog(`Администратор ${currentUser.name} УДАЛИЛ аккаунт ${u.name}`);
     }
-    location.reload();
 };
 
-window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
-
-function updateUI() {
-    const isAdmin = ['admin', 'moder'].includes(currentUser.role);
-    document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
-    
-    document.getElementById('authZone').innerHTML = `
-        <div class="profile-info-block">
-            <div class="profile-avatar-placeholder"><i class="fas fa-user"></i></div>
-            <div class="profile-text-data">
-                <div class="profile-nick">${currentUser.name}</div>
-                <div class="profile-balance">${currentUser.balance || 0} ₽</div>
-            </div>
-            <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
-        </div>
-    `;
-    renderChatTabs();
-}
-
+// --- ВСПОМОГАТЕЛЬНОЕ ---
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+    
     document.querySelectorAll('.main-nav button').forEach(btn => btn.classList.remove('active'));
-    if(id === 'admin') renderAdmin();
+    const activeBtn = document.getElementById(`nav-${id}`) || document.getElementById('adminLink');
+    if(activeBtn) activeBtn.classList.add('active');
+
+    if (id === 'admin') renderAdmin();
 };
 
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -265,29 +310,20 @@ window.notify = (t) => {
     setTimeout(() => toast.style.display = 'none', 3000);
 };
 
-window.setAuthMode = (m) => {
-    authMode = m;
-    document.getElementById('tab-login').classList.toggle('active', m === 'login');
-    document.getElementById('tab-reg').classList.toggle('active', m === 'reg');
-};
-
 document.addEventListener('DOMContentLoaded', () => {
-    renderChatTabs();
-    const picker = document.querySelector('emoji-picker');
-    picker?.addEventListener('emoji-click', e => {
-        const dbPath = currentChatTab === 'global' ? 'messages' : (currentChatTab === 'cats' ? 'cat_messages' : `pms/${[currentUser.name, dmTarget].sort().join('_')}`);
-        const reactRef = ref(db, `${dbPath}/${activeReactMsgId}/reactions/${e.detail.unicode}/${currentUser.name}`);
-        set(reactRef, true);
-        document.getElementById('global-emoji-picker').style.display = 'none';
+    const globalPicker = document.getElementById('global-emoji-picker');
+    const pickerElement = document.querySelector('emoji-picker');
+    window.openEmojiPicker = (msgId, event) => {
+        event.stopPropagation();
+        if (!currentUser) return notify("Сначала войдите!");
+        activeReactMsgId = msgId;
+        globalPicker.style.display = 'block';
+        const rect = event.currentTarget.getBoundingClientRect();
+        globalPicker.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+        globalPicker.style.left = (rect.left + window.scrollX) + 'px';
+    };
+    pickerElement.addEventListener('emoji-click', e => {
+        toggleReaction(activeReactMsgId, e.detail.unicode);
+        globalPicker.style.display = 'none';
     });
 });
-
-window.openEmojiPicker = (msgId, event) => {
-    event.stopPropagation();
-    if (!currentUser) return notify("Войдите!");
-    activeReactMsgId = msgId;
-    const p = document.getElementById('global-emoji-picker');
-    p.style.display = 'block';
-    p.style.top = (event.clientY + 10) + 'px';
-    p.style.left = (event.clientX - 150) + 'px';
-};
