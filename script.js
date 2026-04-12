@@ -84,9 +84,17 @@ function updateUI() {
             <button class="btn-logout" onclick="logout()">ВЫЙТИ</button>
         </div>
     `;
-    if (['admin', 'moder'].includes(currentUser.role)) {
-        document.getElementById('adminLink').style.display = 'block';
-        document.getElementById('clearChatBtn').style.display = 'block';
+    
+    // ИСПРАВЛЕНИЕ БАГА С ПРАВАМИ: Скрываем или показываем элементы
+    const hasAdminRights = ['admin', 'moder'].includes(currentUser.role);
+    
+    document.getElementById('adminLink').style.display = hasAdminRights ? 'block' : 'none';
+    document.getElementById('clearChatBtn').style.display = hasAdminRights ? 'block' : 'none';
+    
+    // Если у пользователя забрали права, а он в админке — выкидываем на главную
+    if (!hasAdminRights && document.getElementById('admin').classList.contains('active')) {
+        showSection('home');
+        notify("Доступ к панели управления закрыт");
     }
 }
 

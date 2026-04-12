@@ -80,7 +80,7 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 /* ИНВЕНТАРЬ */
 .inventory-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Чуть увеличим ширину */
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 15px;
 }
 
@@ -94,13 +94,13 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between; /* Чтобы текст всегда был внизу */
-    min-height: 180px; /* Фиксированная высота карточки */
+    justify-content: space-between;
+    min-height: 180px; 
 }
 
 .item-icon {
     width: 100%;
-    height: 100px; /* Фиксированная высота для области картинки */
+    height: 100px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -110,7 +110,7 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .item-icon img {
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain; /* Картинка впишется без искажений */
+    object-fit: contain; 
     filter: drop-shadow(0 0 5px rgba(255,255,255,0.1));
 }
 
@@ -118,8 +118,8 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
     font-size: 11px;
     font-weight: 700;
     line-height: 1.2;
-    margin-top: auto; /* Прижимает название к низу */
-    min-height: 26px; /* Резервируем место под две строки текста */
+    margin-top: auto;
+    min-height: 26px;
 }
 
 .skin-legendary { color: var(--legendary); text-shadow: 0 0 5px var(--legendary); }
@@ -162,3 +162,59 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .input-field input { width: 100%; padding: 15px 15px 15px 45px; background: #000; border: 1px solid var(--border); border-radius: 12px; color: #fff; }
 
 #toast { position: fixed; bottom: 30px; right: 30px; background: var(--primary); color: #fff; padding: 15px 30px; border-radius: 12px; display: none; z-index: 3000; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+
+/* =========================================
+   АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
+   ========================================= */
+@media (max-width: 768px) {
+    .header-flex {
+        flex-direction: column;
+        height: auto;
+        padding: 15px 0;
+        gap: 15px;
+    }
+    
+    .main-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .main-layout {
+        grid-template-columns: 1fr; 
+        margin-top: 20px;
+    }
+    
+    .case-visual {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+        padding: 20px 10px;
+    }
+    
+    .card {
+        padding: 15px;
+    }
+    .staff-table {
+        font-size: 12px;
+    }
+    
+    .inventory-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
+    
+    .chat-wrapper {
+        height: 500px;
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-info-block {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .shop-price {
+        font-size: 2rem;
+    }
+}
