@@ -18,16 +18,13 @@ const db = getDatabase(app);
 let currentUser = null;
 let allUsers = [];
 let authMode = 'login';
-
-// Список доступных эмодзи
-const EMOJI_LIST = ['🔥', '❤️', '👍', '😂', '🤡', '😮', '😢'];
+let activeReactMsgId = null; // Для отслеживания, к какому сообщению открыт пикер
 
 // --- СИНХРОНИЗАЦИЯ ---
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        // Сохраняем пользователей как массив объектов с их ключами из БД для удобства обновления
-        allUsers = data.users ? Object.entries(data.users).map(([id, val]) => ({ id, ...val })) : [];
+        allUsers = data.users ? Object.values(data.users) : [];
         renderChat(data.messages || {});
         
         const savedNick = localStorage.getItem('hurus_session');
@@ -38,65 +35,9 @@ onValue(ref(db, '/'), (snapshot) => {
                 updateUI();
             }
         }
-        // Если активна секция админки, перерисовываем её при любых изменениях данных
         if (document.getElementById('admin').classList.contains('active')) renderAdmin();
     }
 });
-
-// --- ПАНЕЛЬ УПРАВЛЕНИЯ (STAFF) ---
-// Исправленная функция отрисовки админ-панели
-window.renderAdmin = () => {
-    const list = document.getElementById('adminUserList');
-    if (!list) return;
-
-    list.innerHTML = allUsers.map(u => `
-        <tr>
-            <td>
-                <div style="display:flex; align-items:center; gap:10px">
-                    ${u.avatar ? `<img src="${u.avatar}" style="width:30px; height:30px; border-radius:50%">` : '<i class="fas fa-user"></i>'}
-                    <b>${u.name}</b>
-                </div>
-            </td>
-            <td>
-                <input type="number" value="${u.balance}" id="bal-${u.id}" style="width:70px; background:#000; border:1px solid #333; color:#fff; padding:5px; border-radius:5px">
-                <button class="btn-ok" onclick="updateUserBalance('${u.id}')"><i class="fas fa-check"></i></button>
-            </td>
-            <td>
-                <button class="btn-del" onclick="deleteUser('${u.id}')"><i class="fas fa-trash"></i></button>
-            </td>
-            <td>
-                <select id="role-${u.id}" onchange="updateUserRole('${u.id}', this.value)" style="background:#000; color:#fff; border:1px solid #333; padding:5px; border-radius:5px">
-                    <option value="user" ${u.role === 'user' ? 'selected' : ''}>USER</option>
-                    <option value="vip" ${u.role === 'vip' ? 'selected' : ''}>VIP</option>
-                    <option value="moder" ${u.role === 'moder' ? 'selected' : ''}>MODER</option>
-                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>ADMIN</option>
-                </select>
-            </td>
-            <td>
-                <button class="btn-ok" onclick="notify('Логи игрока ${u.name} пусты')">ЛОГИ</button>
-            </td>
-        </tr>
-    `).join('');
-};
-
-// Функции для управления пользователями
-window.updateUserBalance = (userId) => {
-    const newVal = document.getElementById(`bal-${userId}`).value;
-    update(ref(db, `users/${userId}`), { balance: parseInt(newVal) });
-    notify("Баланс обновлен");
-};
-
-window.updateUserRole = (userId, newRole) => {
-    update(ref(db, `users/${userId}`), { role: newRole });
-    notify("Роль обновлена");
-};
-
-window.deleteUser = (userId) => {
-    if (confirm("Удалить пользователя навсегда?")) {
-        remove(ref(db, `users/${userId}`));
-        notify("Пользователь удален");
-    }
-};
 
 // --- ЧАТ И РЕАКЦИИ ---
 function renderChat(messagesObj) {
@@ -106,13 +47,14 @@ function renderChat(messagesObj) {
     box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => {
         const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
+        // Рендер реакций
         let reactHtml = '';
         if (m.reactions) {
             reactHtml = Object.entries(m.reactions).map(([emoji, users]) => {
                 const userList = Object.keys(users);
                 const count = userList.length;
                 const hasMyReact = currentUser && users[currentUser.name] ? 'active' : '';
-                const names = userList.join(', ');
+                const names = userList.join(', '); // Для подсказки при наведении
 
                 return `
                     <div class="react-item ${hasMyReact}" 
@@ -136,12 +78,9 @@ function renderChat(messagesObj) {
                 <div class="msg-footer">
                     <div class="reactions-container">
                         ${reactHtml}
-                        <div class="add-react-dropdown">
-                            <button class="btn-add-emoji"><i class="fas fa-plus"></i></button>
-                            <div class="emoji-menu">
-                                ${EMOJI_LIST.map(e => `<span onclick="toggleReaction('${m.id}', '${e}')">${e}</span>`).join('')}
-                            </div>
-                        </div>
+                        <button class="btn-add-emoji" onclick="openEmojiPicker('${m.id}', event)">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -152,11 +91,15 @@ function renderChat(messagesObj) {
 
 window.toggleReaction = async (msgId, emoji) => {
     if (!currentUser) return notify("Сначала войдите в аккаунт!");
+    
     const reactRef = ref(db, `messages/${msgId}/reactions/${emoji}/${currentUser.name}`);
     const snap = await get(reactRef);
+
     if (snap.exists()) {
+        // Если уже ставил — удаляем
         remove(reactRef);
     } else {
+        // Если не ставил — добавляем
         set(reactRef, true);
     }
 };
@@ -180,7 +123,7 @@ window.clearChat = () => {
     }
 };
 
-// --- ИНТЕРФЕЙС И НАВИГАЦИЯ ---
+// --- ОСТАЛЬНАЯ ЛОГИКА (Профиль, Вход) ---
 function updateUI() {
     const isAdmin = ['admin', 'moder'].includes(currentUser.role);
     document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
@@ -197,21 +140,6 @@ function updateUI() {
         </div>
     `;
 }
-
-window.showSection = (id) => {
-    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.main-nav button').forEach(b => b.classList.remove('active'));
-    
-    const target = document.getElementById(id);
-    if (target) target.classList.add('active');
-    
-    // Подсвечиваем активную кнопку навигации
-    const navBtn = document.getElementById(`nav-${id}`) || (id === 'admin' ? document.getElementById('adminLink') : null);
-    if (navBtn) navBtn.classList.add('active');
-
-    // Если перешли в админку — запускаем рендер списка
-    if (id === 'admin') renderAdmin();
-};
 
 window.handleAuth = async () => {
     const l = document.getElementById('authLogin').value.trim();
@@ -231,3 +159,51 @@ window.notify = (t) => {
     toast.innerText = t; toast.style.display = 'block';
     setTimeout(() => toast.style.display = 'none', 3000);
 };
+window.showSection = (id) => {
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+};
+
+// --- ЛОГИКА ПИКЕРА ЭМОДЗИ ---
+document.addEventListener('DOMContentLoaded', () => {
+    const globalPicker = document.getElementById('global-emoji-picker');
+    const pickerElement = document.querySelector('emoji-picker');
+
+    window.openEmojiPicker = (msgId, event) => {
+        event.stopPropagation(); 
+        if (!currentUser) return notify("Сначала войдите в аккаунт!");
+        
+        activeReactMsgId = msgId;
+        globalPicker.style.display = 'block';
+        
+        const btnRect = event.currentTarget.getBoundingClientRect();
+        
+        let topPos = btnRect.bottom + window.scrollY + 5;
+        let leftPos = btnRect.left + window.scrollX;
+        
+        if (topPos + 350 > window.innerHeight + window.scrollY) {
+            topPos = btnRect.top + window.scrollY - 355; 
+        }
+        
+        if (leftPos + 320 > window.innerWidth) {
+            leftPos = window.innerWidth - 330;
+        }
+
+        globalPicker.style.top = topPos + 'px';
+        globalPicker.style.left = leftPos + 'px';
+    };
+
+    pickerElement.addEventListener('emoji-click', event => {
+        if (activeReactMsgId) {
+            const emoji = event.detail.unicode; 
+            toggleReaction(activeReactMsgId, emoji);
+            globalPicker.style.display = 'none'; 
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (globalPicker.style.display === 'block' && !globalPicker.contains(e.target)) {
+            globalPicker.style.display = 'none';
+        }
+    });
+});
