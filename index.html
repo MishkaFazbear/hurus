@@ -96,13 +96,13 @@
 
         <div id="admin" class="page-section">
             <h1 class="section-title" style="color:var(--danger)">Панель управления</h1>
-            <div class="card" style="overflow-x: auto;">
+            <div class="card" style="overflow-x: auto; margin-bottom: 20px;">
                 <table class="staff-table">
                     <thead>
                         <tr>
                             <th>Пользователь</th>
                             <th>Баланс</th>
-                            <th>Действие</th>
+                            <th>Выдать ₽</th>
                             <th>Роль</th>
                             <th>Управление</th>
                         </tr>
@@ -110,8 +110,11 @@
                     <tbody id="adminUserList"></tbody>
                 </table>
             </div>
+        
+            <h3 style="margin-bottom:15px">Последние действия</h3>
+            <div class="card" id="adminLogs" style="height: 200px; overflow-y: auto; background: #000; border-color: #333;">
+                </div>
         </div>
-
         <div id="shop" class="page-section">
             <h1 class="section-title">Привилегии</h1>
             <div class="shop-grid">
