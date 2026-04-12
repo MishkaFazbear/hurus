@@ -14,11 +14,11 @@
 <header>
     <div class="container header-flex">
         <div class="logo" onclick="showSection('home')">HuRuS<span>PROJECT</span></div>
-        <nav>
+        <nav class="main-nav">
             <button onclick="showSection('home')" id="nav-home" class="active">СЕРВЕРА</button>
             <button onclick="showSection('cases')" id="nav-cases">КЕЙСЫ</button>
             <button onclick="showSection('shop')" id="nav-shop">МАГАЗИН</button>
-            <button onclick="showSection('admin')" id="adminLink" style="display: none;">STAFF ПАНЕЛЬ</button>
+            <button onclick="showSection('admin')" id="adminLink" style="display: none;">STAFF</button>
         </nav>
         <div id="authZone">
             <button class="btn btn-main" onclick="openModal('authModal')">ВОЙТИ</button>
@@ -33,7 +33,9 @@
             <h2 class="section-title">Игровые миры</h2>
             <div class="server-grid">
                 <div class="server-card">
-                    <img src="https://i.ytimg.com/vi/j3_Yv68iPkw/maxresdefault.jpg" alt="Mirage">
+                    <div class="server-img-wrapper">
+                        <img src="https://i.ytimg.com/vi/j3_Yv68iPkw/maxresdefault.jpg" alt="Mirage" onerror="this.src='https://via.placeholder.com/300x150?text=No+Image'">
+                    </div>
                     <div class="server-info">
                         <h3>MIRAGE ONLY #1</h3>
                         <div class="progress-bg"><div class="progress-bar" style="width: 85%"></div></div>
@@ -42,7 +44,9 @@
                     </div>
                 </div>
                 <div class="server-card">
-                    <img src="https://img.youtube.com/vi/6f_S_v96YtM/maxresdefault.jpg" alt="AWP">
+                    <div class="server-img-wrapper">
+                        <img src="https://img.youtube.com/vi/6f_S_v96YtM/maxresdefault.jpg" alt="AWP" onerror="this.src='https://via.placeholder.com/300x150?text=No+Image'">
+                    </div>
                     <div class="server-info">
                         <h3>AWP LEGO #1</h3>
                         <div class="progress-bg"><div class="progress-bar" style="width: 50%"></div></div>
@@ -55,48 +59,46 @@
 
         <div id="cases" class="page-section">
             <h2 class="section-title">Испытай удачу</h2>
-            <div class="case-card">
-                <div class="case-visual">
-                    <img src="https://pngimg.com/uploads/csgo_case/csgo_case_PNG18.png" alt="Case">
-                    <div class="case-info">
-                        <h3>PREMIUM CASE</h3>
-                        <div id="caseDisplay" class="case-res">?</div>
-                        <button class="btn btn-main" onclick="openCase()">ОТКРЫТЬ [50 ₽]</button>
-                    </div>
+            <div class="case-container">
+                <div class="case-card">
+                    <img src="https://pngimg.com/uploads/csgo_case/csgo_case_PNG18.png" alt="Case" class="case-img" onerror="this.style.display='none'">
+                    <h3>PREMIUM CASE</h3>
+                    <p>Шанс на нож 15%</p>
+                    <div id="caseDisplay" class="case-res">?</div>
+                    <button class="btn btn-main" onclick="openCase()">ОТКРЫТЬ ЗА 50 ₽</button>
                 </div>
             </div>
         </div>
 
         <div id="shop" class="page-section">
-            <h2 class="section-title">Магазин привилегий</h2>
+            <h2 class="section-title">Привилегии</h2>
             <div class="shop-grid">
                 <div class="shop-card vip">
-                    <h4>VIP</h4>
-                    <ul>
-                        <li><i class="fas fa-check"></i> Тэг [VIP]</li>
+                    <div class="role-badge">VIP</div>
+                    <ul class="features">
+                        <li><i class="fas fa-check"></i> Тэг [VIP] в чате</li>
                         <li><i class="fas fa-check"></i> Скины на оружие</li>
                     </ul>
-                    <div class="price">199 ₽</div>
-                    <button class="btn-shop">Купить</button>
+                    <div class="price">199 ₽ <span>/мес</span></div>
+                    <button class="btn-shop" onclick="notify('В разработке')">КУПИТЬ</button>
                 </div>
                 <div class="shop-card premium">
-                    <div class="hot-badge">POPULAR</div>
-                    <h4>PREMIUM</h4>
-                    <ul>
+                    <div class="role-badge">PREMIUM</div>
+                    <ul class="features">
                         <li><i class="fas fa-check"></i> Всё от VIP</li>
-                        <li><i class="fas fa-check"></i> Админ-меню</li>
+                        <li><i class="fas fa-check"></i> Админ-меню (lite)</li>
                     </ul>
-                    <div class="price">499 ₽</div>
-                    <button class="btn-shop">Купить</button>
+                    <div class="price">499 ₽ <span>/мес</span></div>
+                    <button class="btn-shop" onclick="notify('В разработке')">КУПИТЬ</button>
                 </div>
                 <div class="shop-card elite">
-                    <h4>ELITE</h4>
-                    <ul>
+                    <div class="role-badge">ELITE</div>
+                    <ul class="features">
                         <li><i class="fas fa-check"></i> Всё от PREMIUM</li>
-                        <li><i class="fas fa-check"></i> Паутинка</li>
+                        <li><i class="fas fa-check"></i> Паутинка (hook)</li>
                     </ul>
-                    <div class="price">999 ₽</div>
-                    <button class="btn-shop">Купить</button>
+                    <div class="price">999 ₽ <span>/мес</span></div>
+                    <button class="btn-shop" onclick="notify('В разработке')">КУПИТЬ</button>
                 </div>
             </div>
         </div>
@@ -104,19 +106,21 @@
         <div id="admin" class="page-section">
             <h2 class="section-title" style="color:#ff4d4d">Staff Control</h2>
             <div class="admin-panel">
-                <table class="staff-table">
-                    <thead>
-                        <tr><th>Игрок</th><th>Баланс</th><th>Действия</th><th>Роль</th><th>Смена</th></tr>
-                    </thead>
-                    <tbody id="adminUserList"></tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="staff-table">
+                        <thead>
+                            <tr><th>Игрок</th><th>Баланс</th><th>Действия</th><th>Роль</th><th>Смена</th></tr>
+                        </thead>
+                        <tbody id="adminUserList"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </section>
 
     <aside class="sidebar">
         <div class="chat-container">
-            <div class="chat-header">LIVE CHAT</div>
+            <div class="chat-header"><i class="fas fa-comments"></i> LIVE CHAT</div>
             <div id="chatMessages" class="chat-body"></div>
             <div class="chat-footer">
                 <input type="text" id="chatInput" placeholder="Написать...">
@@ -129,7 +133,7 @@
 <footer class="main-footer">
     <div class="container footer-content">
         <div class="footer-left">
-            <p>© 2026 HuRuS Project. Все права защищены.</p>
+            <p>© 2026 <strong>HuRuS Project</strong></p>
             <p>Лучшие игровые сервера CS 2</p>
         </div>
         <div class="footer-center">
@@ -138,8 +142,8 @@
         <div class="footer-right">
             <div class="social-icons">
                 <a href="#"><i class="fab fa-telegram"></i></a>
-                <a href="#"><i class="fab fa-steam"></i></a>
                 <a href="#"><i class="fab fa-vk"></i></a>
+                <a href="#"><i class="fab fa-steam"></i></a>
             </div>
         </div>
     </div>
@@ -155,6 +159,7 @@
             <input type="text" id="authLogin" placeholder="Никнейм">
             <input type="password" id="authPass" placeholder="Пароль">
             <button class="btn btn-main w-100" onclick="handleAuth()">ПРОДОЛЖИТЬ</button>
+            <button class="btn-close" onclick="closeModal()">Закрыть</button>
         </div>
     </div>
 </div>
