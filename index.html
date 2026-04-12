@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HuRuS Project | Official</title>
+    <title>HuRuS Project | Premium Gaming</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -15,13 +15,13 @@
     <div class="container header-flex">
         <div class="logo" onclick="showSection('home')">HuRuS<span>PROJECT</span></div>
         <nav class="main-nav">
-            <button onclick="showSection('home')" id="nav-home" class="active">СЕРВЕРА</button>
-            <button onclick="showSection('cases')" id="nav-cases">КЕЙСЫ</button>
-            <button onclick="showSection('shop')" id="nav-shop">МАГАЗИН</button>
-            <button onclick="showSection('admin')" id="adminLink" style="display: none;">STAFF</button>
+            <button onclick="showSection('home')" id="nav-home" class="active"><i class="fas fa-server"></i> СЕРВЕРА</button>
+            <button onclick="showSection('cases')" id="nav-cases"><i class="fas fa-box-open"></i> КЕЙСЫ</button>
+            <button onclick="showSection('shop')" id="nav-shop"><i class="fas fa-shopping-cart"></i> МАГАЗИН</button>
+            <button onclick="showSection('admin')" id="adminLink" style="display: none;"><i class="fas fa-user-shield"></i> STAFF</button>
         </nav>
         <div id="authZone">
-            <button class="btn btn-main" onclick="openModal('authModal')">ВОЙТИ</button>
+            <button class="btn btn-primary" onclick="openModal('authModal')">ВОЙТИ</button>
         </div>
     </div>
 </header>
@@ -30,102 +30,100 @@
     <section class="content-area">
         
         <div id="home" class="page-section active">
-            <h2 class="section-title">Игровые миры</h2>
+            <h1 class="section-title">Игровые миры</h1>
             <div class="server-grid">
                 <div class="server-card">
-                    <div class="server-img-wrapper">
-                        <img src="https://images.steamusercontent.com/ugc/1843666705696423483/75A6D205937D89605A407F261E2ED729138819BF/?imw=637&imh=358&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=true" alt="Mirage" onerror="this.src='https://via.placeholder.com/300x150?text=No+Image'">
-                    </div>
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdf6-eB2pfRjdFfJocM-v4KQ-8tMBMQZOaUg&s" alt="Mirage" onerror="this.src='https://via.placeholder.com/300x150?text=HuRuS+Mirage'">
                     <div class="server-info">
                         <h3>MIRAGE ONLY #1</h3>
                         <div class="progress-bg"><div class="progress-bar" style="width: 85%"></div></div>
                         <p>17 / 20 игроков</p>
-                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
+                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
                     </div>
                 </div>
                 <div class="server-card">
-                    <div class="server-img-wrapper">
-                        <img src="https://cloud.cybershoke.net/img/maps/2/awp_lego_2.jpg" alt="AWP" onerror="this.src='https://via.placeholder.com/300x150?text=No+Image'">
-                    </div>
+                    <img src="https://cloud.cybershoke.net/img/maps/2/awp_lego_2.jpg" alt="AWP" onerror="this.src='https://via.placeholder.com/300x150?text=HuRuS+AWP'">
                     <div class="server-info">
                         <h3>AWP LEGO #1</h3>
                         <div class="progress-bg"><div class="progress-bar" style="width: 50%"></div></div>
                         <p>8 / 16 игроков</p>
-                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
+                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <div id="cases" class="page-section">
-            <h2 class="section-title">Испытай удачу</h2>
-            <div class="case-container">
-                <div class="case-card">
-                    <img src="https://pngimg.com/uploads/csgo_case/csgo_case_PNG18.png" alt="Case" class="case-img" onerror="this.style.display='none'">
-                    <h3>PREMIUM CASE</h3>
-                    <p>Шанс на нож 15%</p>
-                    <div id="caseDisplay" class="case-res">?</div>
-                    <button class="btn btn-main" onclick="openCase()">ОТКРЫТЬ ЗА 50 ₽</button>
+            <h1 class="section-title">Испытай удачу</h1>
+            <div class="case-card card">
+                <div class="case-visual">
+                    <img src="https://pngimg.com/uploads/csgo_case/csgo_case_PNG18.png" alt="Case" onerror="this.style.display='none'">
+                    <div class="case-details">
+                        <h2>PREMIUM CASE</h2>
+                        <p>Шанс на нож 15%</p>
+                        <div id="caseDisplay" class="case-res">?</div>
+                        <button class="btn btn-primary w-100 open-btn" onclick="openCase()">ОТКРЫТЬ ЗА 50 ₽</button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div id="shop" class="page-section">
-            <h2 class="section-title">Привилегии</h2>
+            <h1 class="section-title">Магазин привилегий</h1>
             <div class="shop-grid">
                 <div class="shop-card vip">
-                    <div class="role-badge">VIP</div>
-                    <ul class="features">
+                    <div class="role-icon">VIP</div>
+                    <h3>VIP Статус</h3>
+                    <ul>
                         <li><i class="fas fa-check"></i> Тэг [VIP] в чате</li>
                         <li><i class="fas fa-check"></i> Скины на оружие</li>
                     </ul>
                     <div class="price">199 ₽ <span>/мес</span></div>
-                    <button class="btn-shop" onclick="notify('В разработке')">КУПИТЬ</button>
+                    <button class="btn btn-shop">Купить</button>
                 </div>
                 <div class="shop-card premium">
-                    <div class="role-badge">PREMIUM</div>
-                    <ul class="features">
+                    <div class="role-icon">MVP</div>
+                    <h3>PREMIUM</h3>
+                    <ul>
                         <li><i class="fas fa-check"></i> Всё от VIP</li>
                         <li><i class="fas fa-check"></i> Админ-меню (lite)</li>
                     </ul>
                     <div class="price">499 ₽ <span>/мес</span></div>
-                    <button class="btn-shop" onclick="notify('В разработке')">КУПИТЬ</button>
-                </div>
-                <div class="shop-card elite">
-                    <div class="role-badge">ELITE</div>
-                    <ul class="features">
-                        <li><i class="fas fa-check"></i> Всё от PREMIUM</li>
-                        <li><i class="fas fa-check"></i> Паутинка (hook)</li>
-                    </ul>
-                    <div class="price">999 ₽ <span>/мес</span></div>
-                    <button class="btn-shop" onclick="notify('В разработке')">КУПИТЬ</button>
+                    <button class="btn btn-shop">Купить</button>
                 </div>
             </div>
         </div>
 
         <div id="admin" class="page-section">
-            <h2 class="section-title" style="color:#ff4d4d">Staff Control</h2>
-            <div class="admin-panel">
-                <div class="table-responsive">
-                    <table class="staff-table">
-                        <thead>
-                            <tr><th>Игрок</th><th>Баланс</th><th>Действия</th><th>Роль</th><th>Смена</th></tr>
-                        </thead>
-                        <tbody id="adminUserList"></tbody>
-                    </table>
-                </div>
+            <h1 class="section-title" style="color:var(--danger)">Staff Control</h1>
+            <div class="card" style="overflow-x: auto;">
+                <table class="staff-table">
+                    <thead>
+                        <tr>
+                            <th>Игрок</th>
+                            <th>Баланс</th>
+                            <th>Выдать ₽</th>
+                            <th>Роль</th>
+                            <th>Смена</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminUserList"></tbody>
+                </table>
             </div>
         </div>
     </section>
 
     <aside class="sidebar">
-        <div class="chat-container">
-            <div class="chat-header"><i class="fas fa-comments"></i> LIVE CHAT</div>
+        <div class="chat-wrapper">
+            <div class="chat-header">Global Live Chat</div>
             <div id="chatMessages" class="chat-body"></div>
             <div class="chat-footer">
                 <input type="text" id="chatInput" placeholder="Написать...">
                 <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
+        </div>
+        <div class="discord-widget card" style="margin-top: 20px; padding: 0; overflow: hidden; border: none;">
+            <iframe src="https://discord.com/widget?id=1488656291705524355&theme=dark" width="100%" height="400" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
         </div>
     </aside>
 </main>
@@ -133,24 +131,21 @@
 <footer class="main-footer">
     <div class="container footer-content">
         <div class="footer-left">
-            <p>© 2026 <strong>HuRuS Project</strong></p>
+            <p>© 2026 HuRuS Project. Все права защищены.</p>
             <p>Лучшие игровые сервера CS 2</p>
-        </div>
-        <div class="footer-center">
-            <a href="#">Лицензионное соглашение</a>
         </div>
         <div class="footer-right">
             <div class="social-icons">
                 <a href="#"><i class="fab fa-telegram"></i></a>
-                <a href="#"><i class="fab fa-vk"></i></a>
                 <a href="#"><i class="fab fa-steam"></i></a>
+                <a href="#"><i class="fab fa-vk"></i></a>
             </div>
         </div>
     </div>
 </footer>
 
-<div id="authModal" class="modal-overlay">
-    <div class="modal-box">
+<div id="authModal" class="modal-overlay" onclick="if(event.target == this) closeModal()">
+    <div class="modal-card">
         <div class="modal-tabs">
             <button id="tab-login" class="active" onclick="setAuthMode('login')">ВХОД</button>
             <button id="tab-reg" onclick="setAuthMode('reg')">РЕГИСТРАЦИЯ</button>
@@ -158,13 +153,13 @@
         <div class="modal-form">
             <input type="text" id="authLogin" placeholder="Никнейм">
             <input type="password" id="authPass" placeholder="Пароль">
-            <button class="btn btn-main w-100" onclick="handleAuth()">ПРОДОЛЖИТЬ</button>
-            <button class="btn-close" onclick="closeModal()">Закрыть</button>
+            <button class="btn btn-primary w-100" onclick="handleAuth()">ПРОДОЛЖИТЬ</button>
         </div>
     </div>
 </div>
 
 <div id="toast"></div>
+
 <script type="module" src="script.js"></script>
 </body>
 </html>
