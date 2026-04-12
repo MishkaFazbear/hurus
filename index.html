@@ -119,7 +119,12 @@
 
     <aside class="sidebar">
         <div class="chat-wrapper">
-            <div class="chat-header">Global Live Chat</div>
+            <div class="chat-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Global Live Chat</span>
+                <button id="clearChatBtn" onclick="clearChat()" style="display: none; background: none; border: none; color: var(--danger); cursor: pointer; font-size: 16px;" title="Очистить чат">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
             <div id="chatMessages" class="chat-body"></div>
             <div class="chat-footer">
                 <input type="text" id="chatInput" placeholder="Написать..." onkeydown="if(event.key==='Enter') sendChatMessage()">

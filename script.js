@@ -41,7 +41,8 @@ window.handleAuth = async () => {
 
     if (authMode === 'reg') {
         if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
-        const role = ['мишутка фазбер', 'sharizmound'].includes(l.toLowerCase()) ? 'admin' : 'user';
+        // Вставь свой ник вместо "твой_ник", чтобы получить права админа при регистрации
+        const role = ['мишутка фазбер', 'sharizmound', 'твой_ник'].includes(l.toLowerCase()) ? 'admin' : 'user';
         await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 0, role: role });
         notify("Успешно!"); setAuthMode('login');
     } else {
@@ -51,7 +52,6 @@ window.handleAuth = async () => {
     }
 };
 
-// 🔴 ИСПРАВЛЕНО ОБНОВЛЕНИЕ UI ДЛЯ ВЫРАВНИВАНИЯ 🔴
 function updateUI() {
     if (!currentUser) return;
     document.getElementById('authZone').innerHTML = `
@@ -63,7 +63,12 @@ function updateUI() {
             <button class="btn-logout" onclick="logout()">ВЫЙТИ</button>
         </div>
     `;
-    if (currentUser.role === 'admin' || currentUser.role === 'moder') document.getElementById('adminLink').style.display = 'block';
+    
+    // Показываем админ-панель и кнопку очистки чата для стаффа
+    if (currentUser.role === 'admin' || currentUser.role === 'moder') {
+        document.getElementById('adminLink').style.display = 'block';
+        document.getElementById('clearChatBtn').style.display = 'block'; 
+    }
 }
 
 window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
@@ -74,6 +79,15 @@ window.sendChatMessage = () => {
     if (!currentUser || !inp.value.trim()) return;
     push(ref(db, 'messages'), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
     inp.value = '';
+};
+
+window.clearChat = () => {
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'moder')) return;
+    
+    if (confirm("Вы уверены, что хотите полностью очистить историю чата?")) {
+        set(ref(db, 'messages'), null);
+        notify("Чат успешно очищен!");
+    }
 };
 
 function renderChat(msgs) {
