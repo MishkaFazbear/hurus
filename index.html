@@ -147,13 +147,17 @@
         </div>
     </section>
 
-    <aside class="chat-sidebar">
-        <div class="chat-container">
-            <div class="chat-header" id="chatTabs" style="display: flex; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px;">
-                <button id="tab-global" onclick="switchChat('global')" style="background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 800; border-bottom: 2px solid var(--primary); padding: 5px;">Глобальный</button>
-                </div>
+    <aside class="sidebar">
+        <div class="chat-wrapper">
+            <div class="chat-header" id="chatTabs">
+                <button id="tab-global" class="active" onclick="switchChat('global')">Глобальный</button>
+                <button id="clearChatBtn" class="btn-clear-chat" onclick="clearChat()" style="display: none;">
+                    <i class="fas fa-broom"></i>
+                </button>
+            </div>
             
-            <div class="chat-messages" id="chatMessages"></div>
+            <div id="chatMessages" class="chat-body"></div>
+            
             <div class="chat-footer">
                 <input type="text" id="chatInput" placeholder="Сообщение..." onkeydown="if(event.key==='Enter') sendChatMessage()">
                 <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
