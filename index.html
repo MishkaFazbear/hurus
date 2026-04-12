@@ -127,11 +127,11 @@
 
     <aside class="sidebar">
         <div class="chat-wrapper">
-            <div class="chat-header" id="chatTabs">
-                <button id="tab-global" class="active" onclick="switchChat('global')">Глобальный</button>
-            </div>
+            <div class="chat-header" id="chatTabs"></div>
             
-            <div id="chatMessages" class="chat-body"></div>
+            <div id="chatMessages" class="chat-body">
+                <div class="chat-placeholder">Выберите чат или нажмите на ник для ЛС</div>
+            </div>
             
             <div class="chat-footer">
                 <input type="text" id="chatInput" placeholder="Сообщение..." onkeydown="if(event.key==='Enter') sendChatMessage()">

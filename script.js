@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update, push, remove, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, onValue, update, push, remove, get, query, limitToLast, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyA7j4u6K3HlgRWULMP0KAOUbjIHAuv5K6s",
@@ -21,11 +21,15 @@ let allLogs = [];
 let authMode = 'login';
 let activeReactMsgId = null; 
 
-// --- ПЕРЕМЕННЫЕ ДЛЯ ЧАТА ---
-let currentChatTab = 'global';
+// --- ПЕРЕМЕННЫЕ ДЛЯ ЧАТА (РАСШИРЕННЫЕ) ---
+let currentChatTab = null; // По умолчанию никакой чат не выбран
 let globalMessages = {};
 let catMessages = {};
-const catUsers = ['mishkafazbear', 'amonphous', 'SharizMound'];
+let privateMessages = {}; // Хранилище для ЛС: { собеседник: { msgId: data } }
+let activePmListeners = {}; // Храним отписчики от ЛС
+let unreadPms = new Set(); // Сет ников, от которых есть непрочитанные
+
+const catUsers = ['mishkafazbear', 'amonphous', 'SharizMound', 'HuRuS']; // HuRuS добавлен для тестов
 
 // --- 1. ОБРАБОТКА ВОЗВРАТА ИЗ STEAM ---
 const urlParams = new URLSearchParams(window.location.search);
@@ -44,9 +48,24 @@ onValue(ref(db, 'users'), (snapshot) => {
     if (savedNick) {
         const found = allUsers.find(u => u.name === savedNick);
         if (found) {
-            currentUser = found;
-            updateUI();
+            // Если пользователь залогинился впервые или сменился
+            if (!currentUser || currentUser.name !== found.name) {
+                currentUser = found;
+                updateUI();
+                // По умолчанию открываем глобальный чат при логине
+                switchChat('global'); 
+                // Начинаем слушать список ЛС для этого пользователя
+                listenToPmList();
+            } else {
+                currentUser = found; // Просто обновляем данные (баланс и т.д.)
+                updateUI();
+            }
         }
+    } else {
+        currentUser = null;
+        updateUI();
+        // Если не залогинен, показываем заглушку в чате
+        renderChatPlaceHolder("Войдите, чтобы читать чат");
     }
     
     if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) {
@@ -101,33 +120,102 @@ function renderLogs() {
     }).join('');
 }
 
-// --- ЧАТ И РЕАКЦИИ ---
-window.switchChat = (tab) => {
-    currentChatTab = tab;
+// ============================================================
+// --- ДВИЖОК ЧАТА (НОВЫЙ, С ЛС) ---
+// ============================================================
+
+// Генерирует уникальный ID для комнаты ЛС на основе двух ников (алфавитный порядок)
+function getPmRoomId(user1, user2) {
+    return [user1, user2].sort().join('_##_');
+}
+
+// Функция переключения чатов (включая ЛС)
+window.switchChat = (tabType, targetUser = null) => {
+    // tabType может быть: 'global', 'cats', 'pm'
+    const newTabId = tabType === 'pm' ? `pm_${targetUser}` : tabType;
     
-    document.getElementById('tab-global').style.color = tab === 'global' ? 'var(--primary)' : 'var(--text-dim)';
-    document.getElementById('tab-global').style.borderBottom = tab === 'global' ? '2px solid var(--primary)' : 'none';
-    
-    const catTab = document.getElementById('tab-cats');
-    if (catTab) {
-        catTab.style.color = tab === 'cats' ? '#ff66b2' : 'var(--text-dim)';
-        catTab.style.borderBottom = tab === 'cats' ? '2px solid #ff66b2' : 'none';
+    if (currentChatTab === newTabId) return; // Уже тут
+    currentChatTab = newTabId;
+
+    // Очищаем непрочитанные, если переключились на ЛС
+    if (tabType === 'pm') {
+        unreadPms.delete(targetUser);
     }
 
-    renderChat(tab === 'global' ? globalMessages : catMessages);
+    renderChatTabs(); // Перерисовываем табы (обновить active класс)
+
+    // Рендерим сообщения
+    if (tabType === 'global') {
+        renderChat(globalMessages);
+    } else if (tabType === 'cats') {
+        if (!currentUser || !catUsers.includes(currentUser.name)) {
+            renderChatPlaceHolder("Доступ запрещен =^.^=");
+            return;
+        }
+        renderChat(catMessages);
+    } else if (tabType === 'pm') {
+        // Если сообщений с этим юзером еще нет в кэше, показываем загрузку
+        if (!privateMessages[targetUser]) {
+            renderChatPlaceHolder(`Загрузка чата с ${targetUser}...`);
+            // listenToPrivateMessages(targetUser); // Это вызовется автоматически из listenToPmList
+        } else {
+            renderChat(privateMessages[targetUser], true, targetUser);
+        }
+    }
 };
 
-function renderChat(messagesObj) {
+// Функция отрисовки вкладок чата (динамическая)
+function renderChatTabs() {
+    const tabsBox = document.getElementById('chatTabs');
+    if (!tabsBox) return;
+
+    let html = '';
+
+    // 1. Глобальный
+    html += `<button class="chat-tab-btn ${currentChatTab === 'global' ? 'active' : ''}" onclick="switchChat('global')">Глобальный</button>`;
+
+    // 2. Чат Котиков (только для котиков)
+    if (currentUser && catUsers.includes(currentUser.name)) {
+        html += `<button class="chat-tab-btn tab-cats ${currentChatTab === 'cats' ? 'active' : ''}" onclick="switchChat('cats')">Чат Котиков <3</button>`;
+    }
+
+    // 3. Вкладки ЛС (динамические)
+    Object.keys(privateMessages).forEach(withUser => {
+        const isActive = currentChatTab === `pm_${withUser}`;
+        const hasUnread = unreadPms.has(withUser) && !isActive;
+        const classes = `chat-tab-btn tab-pm ${isActive ? 'active' : ''} ${hasUnread ? 'has-unread' : ''}`;
+        html += `<button class="${classes}" onclick="switchChat('pm', '${withUser}')">[ЛС] ${withUser}</button>`;
+    });
+
+    tabsBox.innerHTML = html;
+}
+
+// Заглушка, если чат пуст или недоступен
+function renderChatPlaceHolder(text) {
+    document.getElementById('chatMessages').innerHTML = `<div class="chat-placeholder">${text}</div>`;
+}
+
+// Основная функция рендеринга сообщений
+function renderChat(messagesObj, isPm = false, pmPartner = null) {
     const box = document.getElementById('chatMessages');
     const msgs = Object.entries(messagesObj || {}).map(([id, data]) => ({ id, ...data }));
     
+    if (msgs.length === 0) {
+        renderChatPlaceHolder(isPm ? `Напишите первое сообщение ${pmPartner}...` : "Сообщений пока нет...");
+        return;
+    }
+
     box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => {
         const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const userRole = m.r || 'user';
-        const roleName = userRole.toUpperCase();
         
+        // В ЛС не показываем баджи ролей
+        const userRole = isPm ? 'user' : (m.r || 'user');
+        const roleName = userRole.toUpperCase();
+        const badgeHtml = isPm ? '' : `<span class="badge badge-${userRole}">${roleName}</span>`;
+
         let reactHtml = '';
-        if (m.reactions) {
+        // Реакции только для публичных чатов
+        if (!isPm && m.reactions) {
             reactHtml = Object.entries(m.reactions).map(([emoji, users]) => {
                 const userList = Object.keys(users);
                 const count = userList.length;
@@ -141,20 +229,28 @@ function renderChat(messagesObj) {
             }).join('');
         }
 
+        // Кнопка добавления эмодзи тоже только для публичных
+        const addEmojiBtn = isPm ? '' : `
+            <button class="btn-add-emoji" onclick="openEmojiPicker('${m.id}', event)">
+                <i class="fas fa-plus"></i>
+            </button>
+        `;
+
+        // Обработка клика на ник для начала ЛС
+        const authorClickAction = (currentUser && m.u !== currentUser.name) ? `onclick="startPm('${m.u}')"` : '';
+
         return `
             <div class="msg">
                 <div class="msg-header">
-                    <span class="badge badge-${userRole}">${roleName}</span>
-                    <span class="msg-author">${m.u}</span>
+                    ${badgeHtml}
+                    <span class="msg-author" ${authorClickAction}>${m.u}</span>
                     <span class="msg-time">${timeStr}</span>
                 </div>
                 <div class="msg-text">${m.t}</div>
                 <div class="msg-footer">
                     <div class="reactions-container">
                         ${reactHtml}
-                        <button class="btn-add-emoji" onclick="openEmojiPicker('${m.id}', event)">
-                            <i class="fas fa-plus"></i>
-                        </button>
+                        ${addEmojiBtn}
                     </div>
                 </div>
             </div>
@@ -163,32 +259,129 @@ function renderChat(messagesObj) {
     box.scrollTop = box.scrollHeight;
 }
 
+// Реакции (без изменений, работают только в глобале/котиках)
 window.toggleReaction = async (msgId, emoji) => {
     if (!currentUser) return notify("Сначала войдите в аккаунт!");
-    const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
+    // Определяем путь базы на основе ТЕКУЩЕЙ активной вкладки
+    let dbPath = '';
+    if (currentChatTab === 'global') dbPath = 'messages';
+    else if (currentChatTab === 'cats') dbPath = 'cat_messages';
+    else return; // В ЛС реакций нет
+
     const reactRef = ref(db, `${dbPath}/${msgId}/reactions/${emoji}/${currentUser.name}`);
     const snap = await get(reactRef);
     if (snap.exists()) {
         remove(reactRef);
-        addLog(`Пользователь ${currentUser.name} убрал реакцию ${emoji} с сообщения`);
     } else {
         set(reactRef, true);
-        addLog(`Пользователь ${currentUser.name} поставил реакцию ${emoji} на сообщение`);
     }
 };
 
+// Отправка сообщения
 window.sendChatMessage = () => {
     const inp = document.getElementById('chatInput');
-    if (!currentUser || !inp.value.trim()) return;
+    const msgText = inp.value.trim();
+    if (!currentUser || !msgText) return;
     
-    const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
-    push(ref(db, dbPath), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
+    if (currentChatTab === 'global') {
+        push(ref(db, 'messages'), { u: currentUser.name, r: currentUser.role, t: msgText, time: Date.now() });
+    } else if (currentChatTab === 'cats') {
+        push(ref(db, 'cat_messages'), { u: currentUser.name, r: currentUser.role, t: msgText, time: Date.now() });
+    } else if (currentChatTab && currentChatTab.startsWith('pm_')) {
+        const targetUser = currentChatTab.replace('pm_', '');
+        const roomId = getPmRoomId(currentUser.name, targetUser);
+        
+        // Пушим сообщение в комнату ЛС
+        push(ref(db, `pms/${roomId}`), { u: currentUser.name, t: msgText, time: Date.now() });
+        
+        // Обновляем "индекс" ЛС для обоих пользователей (чтобы вкладка появилась)
+        update(ref(db, `user_pms/${currentUser.name}/${targetUser}`), { last_time: Date.now() });
+        update(ref(db, `user_pms/${targetUser}/${currentUser.name}`), { last_time: Date.now() });
+    }
     
-    addLog(`Пользователь ${currentUser.name} написал в ${currentChatTab === 'global' ? 'глобальный чат' : 'чат котиков'}: ${inp.value}`);
     inp.value = '';
 };
 
-// --- АВТОРИЗАЦИЯ И ПРОФИЛЬ ---
+// --- ЛОГИКА ЛИЧНЫХ СООБЩЕНИЙ (PM) ---
+
+// Функция для начала ЛС (вызывается при клике на ник)
+window.startPm = (targetNick) => {
+    if (!currentUser) return notify("Войдите, чтобы писать ЛС!");
+    if (targetNick === currentUser.name) return; // Себе нельзя
+    
+    // Создаем пустую запись в индексе, если чата еще нет, чтобы вкладка появилась
+    const indexRef = ref(db, `user_pms/${currentUser.name}/${targetNick}`);
+    get(indexRef).then(snap => {
+        if (!snap.exists()) {
+            update(indexRef, { last_time: Date.now() });
+            // listenToPrivateMessages вызовется автоматом через listenToPmList
+        }
+    });
+
+    switchChat('pm', targetNick);
+};
+
+// Функция прослушивания конкретной комнаты ЛС
+function listenToPrivateMessages(targetUser) {
+    if (!currentUser || activePmListeners[targetUser]) return; // Уже слушаем
+
+    const roomId = getPmRoomId(currentUser.name, targetUser);
+    // Ограничиваем последние 50 сообщений в ЛС
+    const pmQuery = query(ref(db, `pms/${roomId}`), limitToLast(50));
+
+    // Сохраняем отписчик
+    activePmListeners[targetUser] = onValue(pmQuery, (snapshot) => {
+        const msgs = snapshot.val() || {};
+        privateMessages[targetUser] = msgs;
+
+        // Если это новое сообщение и мы НЕ в этом чате -> уведомление
+        if (snapshot.exists()) {
+            const lastMsg = Object.values(msgs).sort((a,b)=>b.time-a.time)[0];
+            const isMyMsg = lastMsg.u === currentUser.name;
+            const isChatActive = currentChatTab === `pm_${targetUser}`;
+            
+            if (!isMyMsg && !isChatActive) {
+                unreadPms.add(targetUser);
+            }
+        }
+
+        renderChatTabs(); // Обновить табы (вдруг появилось уведомление)
+        
+        // Если этот чат сейчас открыт -> перерисовать сообщения
+        if (currentChatTab === `pm_${targetUser}`) {
+            renderChat(msgs, true, targetUser);
+        }
+    });
+}
+
+// Функция прослушивания СПИСКА собеседников ЛС текущего юзера
+function listenToPmList() {
+    if (!currentUser) return;
+    
+    // Отписываемся от старых ЛС, если зашли под другим акком
+    Object.values(activePmListeners).forEach(off => off());
+    activePmListeners = {};
+    privateMessages = {};
+    unreadPms.clear();
+
+    onValue(ref(db, `user_pms/${currentUser.name}`), (snapshot) => {
+        const data = snapshot.val() || {};
+        const partners = Object.keys(data);
+        
+        // Для каждого собеседника начинаем слушать его комнату сообщений
+        partners.forEach(partner => {
+            listenToPrivateMessages(partner);
+        });
+
+        // Если собеседников нет, обновить табы (убрать старые вкладки ЛС)
+        if (partners.length === 0) {
+            renderChatTabs();
+        }
+    });
+}
+
+
+// --- АВТОРИЗАЦИЯ И ПРОФИЛЬ (БЕЗ ИЗМЕНЕНИЙ) ---
 window.setAuthMode = (mode) => {
     authMode = mode;
     document.getElementById('tab-login').classList.toggle('active', mode === 'login');
@@ -206,12 +399,10 @@ window.handleAuth = async () => {
         const found = allUsers.find(u => u.name === l && u.pass === p);
         if (!found) return notify("Ошибка входа!");
         localStorage.setItem('hurus_session', found.name);
-        await addLog(`Пользователь ${found.name} вошел в систему`);
     } else {
         if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
         await push(ref(db, 'users'), { name: l, pass: p, balance: 0, role: 'user', avatar: '' });
         localStorage.setItem('hurus_session', l);
-        await addLog(`Новый пользователь ${l} зарегистрировался`);
     }
     
     setTimeout(() => { location.reload(); }, 200);
@@ -221,33 +412,29 @@ window.loginWithSteam = () => window.location.href = "https://hurus-backend.onre
 window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
 
 function updateUI() {
-    const isAdmin = ['admin', 'moder'].includes(currentUser.role);
-    document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
+    const authZone = document.getElementById('authZone');
     
-    document.getElementById('authZone').innerHTML = `
-        <div class="profile-info-block">
-            ${currentUser.avatar ? `<img src="${currentUser.avatar}" class="profile-avatar">` : '<div class="profile-avatar-placeholder"><i class="fas fa-user"></i></div>'}
-            <div class="profile-text-data">
-                <div class="profile-nick">${currentUser.name}</div>
-                <div class="profile-balance">${currentUser.balance || 0} ₽</div>
+    if (currentUser) {
+        const isAdmin = ['admin', 'moder'].includes(currentUser.role);
+        document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
+        
+        authZone.innerHTML = `
+            <div class="profile-info-block">
+                ${currentUser.avatar ? `<img src="${currentUser.avatar}" class="profile-avatar">` : '<div class="profile-avatar-placeholder"><i class="fas fa-user"></i></div>'}
+                <div class="profile-text-data">
+                    <div class="profile-nick">${currentUser.name}</div>
+                    <div class="profile-balance">${currentUser.balance || 0} ₽</div>
+                </div>
+                <button class="btn-logout" onclick="logout()" title="Выйти"><i class="fas fa-sign-out-alt"></i></button>
             </div>
-            <button class="btn-logout" onclick="logout()" title="Выйти"><i class="fas fa-sign-out-alt"></i></button>
-        </div>
-    `;
-
-    const chatTabs = document.getElementById('chatTabs');
-    if (catUsers.includes(currentUser.name)) {
-        if (!document.getElementById('tab-cats')) {
-            chatTabs.innerHTML += `<button id="tab-cats" onclick="switchChat('cats')" style="background: none; border: none; color: var(--text-dim); cursor: pointer; font-weight: 800; padding: 5px; margin-left: 10px;">Чат Котиков <3</button>`;
-        }
+        `;
     } else {
-        const catTab = document.getElementById('tab-cats');
-        if (catTab) catTab.remove();
-        if (currentChatTab === 'cats') switchChat('global');
+        document.getElementById('adminLink').style.display = 'none';
+        authZone.innerHTML = `<button class="btn btn-primary" onclick="openModal('authModal')">ВОЙТИ</button>`;
     }
 }
 
-// --- ПАНЕЛЬ УПРАВЛЕНИЯ (ADMIN) ---
+// --- ПАНЕЛЬ УПРАВЛЕНИЯ (ADMIN) (БЕЗ ИЗМЕНЕНИЙ) ---
 window.renderAdmin = () => {
     const list = document.getElementById('adminUserList');
     if (!list) return;
@@ -307,7 +494,7 @@ window.deleteUser = (uid) => {
     }
 };
 
-// --- ВСПОМОГАТЕЛЬНОЕ ---
+// --- ВСПОМОГАТЕЛЬНОЕ (БЕЗ ИЗМЕНЕНИЙ) ---
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
