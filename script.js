@@ -19,7 +19,7 @@ let currentUser = null;
 let allUsers = [];
 let authMode = 'login';
 
-// --- ЛОГИКА STEAM (Должна быть выше onValue) ---
+// 1. ПРОВЕРКА ВХОДА ЧЕРЕЗ STEAM (сразу при загрузке)
 const urlParams = new URLSearchParams(window.location.search);
 const steamId = urlParams.get('steamid');
 const steamName = urlParams.get('name');
@@ -27,7 +27,7 @@ const steamAvatar = urlParams.get('avatar');
 
 if (steamId && steamName) {
     handleSteamLogin(steamId, steamName, steamAvatar);
-    // Убираем мусор из адресной строки
+    // Очищаем URL от параметров, чтобы при перезагрузке не входить заново
     window.history.replaceState({}, document.title, window.location.pathname);
 }
 
@@ -35,9 +35,10 @@ async function handleSteamLogin(id, name, avatarUrl) {
     const avatar = avatarUrl || "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg";
     const userRef = ref(db, 'users/' + name);
     
+    // Проверяем, есть ли такой юзер в базе
     const snapshot = await get(userRef);
     if (!snapshot.exists()) {
-        // Регистрация нового через Steam
+        // Если новый — регистрируем
         await set(userRef, { 
             name: name, 
             steamId: id,
@@ -47,18 +48,16 @@ async function handleSteamLogin(id, name, avatarUrl) {
             inventory: [] 
         });
     } else {
-        // Обновляем данные существующего
+        // Если старый — обновляем аватарку и ID
         await update(userRef, { steamId: id, avatar: avatar });
     }
 
-    // КРИТИЧЕСКИЙ МОМЕНТ: Сохраняем ник в память браузера
+    // Сохраняем сессию в браузере
     localStorage.setItem('hurus_session', name);
-    notify(`Авторизация успешна: ${name}`);
-    
-    // Перезагрузка не нужна, onValue подхватит изменения автоматически
+    location.reload(); // Перезагружаем, чтобы onValue подхватил данные
 }
 
-// --- СИНХРОНИЗАЦИЯ С БАЗОЙ ---
+// 2. СИНХРОНИЗАЦИЯ С БАЗОЙ
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
@@ -72,36 +71,44 @@ onValue(ref(db, '/'), (snapshot) => {
                 currentUser = found;
                 updateUI();
                 updateInventory();
+            } else {
+                logout();
             }
         }
+
+        if (document.getElementById('admin').classList.contains('active')) renderAdmin();
     }
 });
 
-// Обновление интерфейса (профиль)
+// 3. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА АККАУНТА
 function updateUI() {
     if (!currentUser) return;
     
-    const avatarHtml = currentUser.avatar 
-        ? `<img src="${currentUser.avatar}" class="profile-avatar">` 
-        : `<div class="profile-avatar-placeholder"><i class="fas fa-user"></i></div>`;
+    // Генерируем HTML для блока профиля с аватаркой
+    const avatarImg = currentUser.avatar ? `<img src="${currentUser.avatar}" class="profile-avatar">` : '';
 
     document.getElementById('authZone').innerHTML = `
         <div class="profile-info-block">
-            ${avatarHtml}
+            ${avatarImg}
             <div class="profile-text-data">
                 <div class="profile-nick">${currentUser.name}</div>
                 <div class="profile-balance">${currentUser.balance} ₽</div>
             </div>
-            <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+            <button class="btn-logout" onclick="logout()" title="Выйти"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     `;
     
-    const hasAdmin = ['admin', 'moder'].includes(currentUser.role);
-    document.getElementById('adminLink').style.display = hasAdmin ? 'block' : 'none';
-    document.getElementById('clearChatBtn').style.display = hasAdmin ? 'block' : 'none';
+    const hasAdminRights = ['admin', 'moder'].includes(currentUser.role);
+    document.getElementById('adminLink').style.display = hasAdminRights ? 'block' : 'none';
+    document.getElementById('clearChatBtn').style.display = hasAdminRights ? 'block' : 'none';
+    
+    if (!hasAdminRights && document.getElementById('admin').classList.contains('active')) {
+        showSection('home');
+    }
 }
 
-// Обычная авторизация
+// --- ОСТАЛЬНЫЕ ФУНКЦИИ ---
+
 window.handleAuth = async () => {
     const l = document.getElementById('authLogin').value.trim();
     const p = document.getElementById('authPass').value.trim();
@@ -109,32 +116,39 @@ window.handleAuth = async () => {
 
     if (authMode === 'reg') {
         if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
-        await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 100, role: 'user' });
-        notify("Регистрация успешна!");
+        const role = ['мишутка фазбер', 'sharizmound'].includes(l.toLowerCase()) ? 'admin' : 'user';
+        await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 100, role: role, inventory: [] });
+        notify("Готово! +100₽ бонусом"); 
         setAuthMode('login');
     } else {
         const found = allUsers.find(u => u.name === l && u.pass === p);
-        if (!found) return notify("Ошибка входа!");
-        localStorage.setItem('hurus_session', found.name);
+        if (!found) return notify("Неверный вход!");
+        currentUser = found; 
+        localStorage.setItem('hurus_session', currentUser.name);
+        updateUI(); 
         closeModal();
     }
 };
 
 window.loginWithSteam = () => {
+    notify("Перенаправление в Steam...");
     window.location.href = "https://hurus-backend.onrender.com/auth/steam";
 };
 
 window.logout = () => {
     localStorage.removeItem('hurus_session');
-    location.reload();
+    location.reload(); 
 };
 
-// --- ОСТАЛЬНЫЕ ФУНКЦИИ (Чат, Кейсы, Админка) ---
 window.sendChatMessage = () => {
     const inp = document.getElementById('chatInput');
     if (!currentUser || !inp.value.trim()) return;
     push(ref(db, 'messages'), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
     inp.value = '';
+};
+
+window.clearChat = () => {
+    if (confirm("Очистить чат для всех?")) set(ref(db, 'messages'), null);
 };
 
 function renderChat(msgs) {
@@ -145,10 +159,68 @@ function renderChat(msgs) {
     box.scrollTop = box.scrollHeight;
 }
 
+const skins = [
+    {n: "AWP | Dragon Lore", r: "legendary", img: "https://stash.clash.gg/storage/img/skin_sideview/s422.png"},
+    {n: "Karambit | Doppler", r: "legendary", img: "https://community.fastly.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyL6kJ_m-B1Q7uCvZaZkNM-SA1iUzv5mvOR7cDm7lA4i4gKJk4jxNWXFb1cpDJR2FOFbsBTql9bjYbzq7gPZiN1MxH7_2ytNuCdpte1UB_Ui5OSJ2GbkVqni/330x192?allow_animated=1"},
+    {n: "AK-47 | Neon Rider", r: "epic", img: "https://ss.bitskins.com/ab/ab6308d8e743e1fcc04fd5b10fd48489-front.webp"},
+    {n: "P250 | Sand Dune", r: "common", img: "https://pub-5f12f7508ff04ae5925853dee0438460.r2.dev/data/images/wiki_gf1Kc6S_preview.png"}
+];
+
+window.openCase = () => {
+    if (!currentUser) return openModal('authModal');
+    if (currentUser.balance < 100) return notify("Недостаточно баланса!");
+    const btn = document.getElementById('openBtn');
+    btn.disabled = true;
+    document.getElementById('caseDisplay').innerText = "Открытие...";
+    setTimeout(() => {
+        const win = skins[Math.floor(Math.random() * skins.length)];
+        const currentInv = currentUser.inventory ? [...Object.values(currentUser.inventory)] : [];
+        currentInv.push({ ...win, id: Date.now() });
+        update(ref(db, 'users/' + currentUser.name), { 
+            balance: currentUser.balance - 100,
+            inventory: currentInv
+        });
+        document.getElementById('caseDisplay').innerHTML = `
+            <img src="${win.img}" style="width: 140px; margin: 10px auto; display: block;">
+            <span class="skin-${win.r}">${win.n}</span>
+        `;
+        btn.disabled = false;
+    }, 1200);
+};
+
+function updateInventory() {
+    const grid = document.getElementById('inventoryGrid');
+    if (!currentUser || !currentUser.inventory) {
+        grid.innerHTML = '<p>Тут пока пусто...</p>';
+        return;
+    }
+    grid.innerHTML = Object.values(currentUser.inventory).map(item => `
+        <div class="inventory-item">
+            <div class="item-icon"><img src="${item.img}"></div>
+            <div class="item-name skin-${item.r}">${item.n}</div>
+        </div>
+    `).join('');
+}
+
+function renderAdmin() {
+    const list = document.getElementById('adminUserList');
+    list.innerHTML = allUsers.map(u => `
+        <tr>
+            <td>
+                ${u.avatar ? `<img src="${u.avatar}" style="width:20px; border-radius:50%; vertical-align:middle; margin-right:5px;">` : ''}
+                <b>${u.name}</b>
+            </td>
+            <td>${u.balance} ₽</td>
+            <td><button onclick="giveBal('${u.name}')" class="btn-ok">+</button></td>
+            <td><span class="badge badge-${u.role}">${u.role}</span></td>
+            <td><button onclick="removeUser('${u.name}')" class="btn-del">УДАЛИТЬ</button></td>
+        </tr>
+    `).join('');
+}
+
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-    if (id === 'admin') renderAdmin();
 };
 
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -163,7 +235,3 @@ window.notify = (t) => {
     toast.innerText = t; toast.style.display = 'block';
     setTimeout(() => toast.style.display = 'none', 3000);
 };
-
-// Заглушки для инвентаря и админки, чтобы не было ошибок
-function updateInventory() {}
-function renderAdmin() {}
