@@ -24,8 +24,8 @@ let activeReactMsgId = null;
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        // ИСПРАВЛЕНИЕ: Теперь мы сохраняем уникальный ключ пользователя (uid) для админ-панели
-        allUsers = data.users ? Object.entries(data.users).map(([key, val]) => ({ uid: key, ...val })) : [];
+        // Сохраняем пользователей с их уникальными ключами (ID) для админки
+        allUsers = data.users ? Object.entries(data.users).map(([id, val]) => ({ uid: id, ...val })) : [];
         renderChat(data.messages || {});
         
         const savedNick = localStorage.getItem('hurus_session');
@@ -33,11 +33,6 @@ onValue(ref(db, '/'), (snapshot) => {
             const found = allUsers.find(u => u.name === savedNick);
             if (found) {
                 currentUser = found;
-                updateUI();
-            } else {
-                // Если админ удалил юзера, разлогиниваем его
-                currentUser = null;
-                localStorage.removeItem('hurus_session');
                 updateUI();
             }
         }
@@ -121,15 +116,8 @@ window.clearChat = () => {
     }
 };
 
-// --- ИНТЕРФЕЙС И АВТОРИЗАЦИЯ ---
+// --- АВТОРИЗАЦИЯ И ПРОФИЛЬ ---
 function updateUI() {
-    if (!currentUser) {
-        document.getElementById('adminLink').style.display = 'none';
-        document.getElementById('clearChatBtn').style.display = 'none';
-        document.getElementById('authZone').innerHTML = `<button class="btn btn-primary" onclick="openModal('authModal')">ВОЙТИ</button>`;
-        return;
-    }
-
     const isAdmin = ['admin', 'moder'].includes(currentUser.role);
     document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
     document.getElementById('clearChatBtn').style.display = isAdmin ? 'block' : 'none';
@@ -146,7 +134,6 @@ function updateUI() {
     `;
 }
 
-// ИСПРАВЛЕНИЕ: Логика переключения вкладок авторизации (Вход / Регистрация)
 window.setAuthMode = (mode) => {
     authMode = mode;
     document.getElementById('tab-login').classList.toggle('active', mode === 'login');
@@ -155,53 +142,45 @@ window.setAuthMode = (mode) => {
     if (btn) btn.innerText = mode === 'login' ? 'ВЫПОЛНИТЬ' : 'ЗАРЕГИСТРИРОВАТЬСЯ';
 };
 
-// ИСПРАВЛЕНИЕ: Полноценная обработка Входа и Регистрации
 window.handleAuth = async () => {
     const l = document.getElementById('authLogin').value.trim();
     const p = document.getElementById('authPass').value.trim();
-    if (!l || !p) return notify("Заполните логин и пароль!");
+    if (!l || !p) return notify("Заполните все поля!");
 
     if (authMode === 'login') {
         const found = allUsers.find(u => u.name === l && u.pass === p);
-        if (!found) return notify("Неверный логин или пароль!");
+        if (!found) return notify("Неверные данные!");
         localStorage.setItem('hurus_session', found.name);
-        location.reload();
     } else {
-        const found = allUsers.find(u => u.name === l);
-        if (found) return notify("Этот никнейм уже занят!");
-
-        // Создаем нового пользователя
-        const newUserRef = push(ref(db, 'users'));
-        await set(newUserRef, {
+        if (allUsers.find(u => u.name === l)) return notify("Никнейм занят!");
+        await push(ref(db, 'users'), {
             name: l,
             pass: p,
             balance: 0,
             role: 'user',
             avatar: ''
         });
-        
-        notify("Успешная регистрация!");
         localStorage.setItem('hurus_session', l);
-        setTimeout(() => location.reload(), 800);
     }
+    location.reload();
 };
 
-// ИСПРАВЛЕНИЕ: Заглушка для Steam, так как бэкенда нет (создает тестовый профиль Steam)
 window.loginWithSteam = () => {
-    const steamMockName = "SteamUser_" + Math.floor(Math.random() * 9999);
-    const newUserRef = push(ref(db, 'users'));
-    set(newUserRef, {
-        name: steamMockName,
-        pass: "steam_hidden_pass",
-        balance: 0,
-        role: 'user',
-        avatar: "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
-    });
-    localStorage.setItem('hurus_session', steamMockName);
-    location.reload();
+    // Исправлено: теперь создается локальная сессия для входа
+    const mockSteamNick = "SteamUser_" + Math.floor(Math.random() * 1000);
+    localStorage.setItem('hurus_session', mockSteamNick);
     
-    // Когда починишь бэкенд, удали код выше и раскомментируй строку ниже:
-    // window.location.href = "https://hurus-backend.onrender.com/auth/steam";
+    // Если пользователя нет в базе — добавляем
+    const existing = allUsers.find(u => u.name === mockSteamNick);
+    if (!existing) {
+        push(ref(db, 'users'), {
+            name: mockSteamNick,
+            balance: 0,
+            role: 'user',
+            avatar: "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
+        });
+    }
+    location.reload();
 };
 
 window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
@@ -213,102 +192,63 @@ window.notify = (t) => {
     setTimeout(() => toast.style.display = 'none', 3000);
 };
 
-// ИСПРАВЛЕНИЕ: Вызов renderAdmin при переходе в панель
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     if (id === 'admin') renderAdmin();
 };
 
-// --- ПАНЕЛЬ УПРАВЛЕНИЯ (ИСПРАВЛЕНО) ---
+// --- ПАНЕЛЬ УПРАВЛЕНИЯ ---
 window.renderAdmin = () => {
     const list = document.getElementById('adminUserList');
     if (!list) return;
-    
     list.innerHTML = allUsers.map(u => `
         <tr>
             <td>${u.name}</td>
             <td>${u.balance || 0} ₽</td>
+            <td><button class="btn-ok" onclick="addBalance('${u.uid}', 100)">+100₽</button></td>
             <td>
-                <button class="btn-ok" onclick="addBalance('${u.uid}', 100)">+100₽</button>
-            </td>
-            <td>
-                <select onchange="changeRole('${u.uid}', this.value)" style="background:var(--bg); color:var(--text); padding:5px; border:1px solid var(--border); border-radius:5px;">
+                <select onchange="changeRole('${u.uid}', this.value)">
                     <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
                     <option value="vip" ${u.role === 'vip' ? 'selected' : ''}>VIP</option>
                     <option value="moder" ${u.role === 'moder' ? 'selected' : ''}>Moder</option>
                     <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                 </select>
             </td>
-            <td>
-                <button class="btn-del" onclick="deleteUser('${u.uid}')"><i class="fas fa-trash"></i></button>
-            </td>
+            <td><button class="btn-del" onclick="deleteUser('${u.uid}')"><i class="fas fa-trash"></i></button></td>
         </tr>
     `).join('');
 };
 
 window.addBalance = (uid, amount) => {
-    if (!currentUser || !['admin', 'moder'].includes(currentUser.role)) return notify("Нет прав!");
     const u = allUsers.find(user => user.uid === uid);
-    if (u) {
-        update(ref(db, `users/${uid}`), { balance: (u.balance || 0) + amount });
-        notify(`Баланс игрока ${u.name} пополнен`);
-    }
+    if (u) update(ref(db, `users/${uid}`), { balance: (u.balance || 0) + amount });
 };
 
 window.changeRole = (uid, newRole) => {
-    if (!currentUser || currentUser.role !== 'admin') return notify("Только админ может менять роли!");
     update(ref(db, `users/${uid}`), { role: newRole });
-    notify(`Роль изменена`);
 };
 
 window.deleteUser = (uid) => {
-    if (!currentUser || currentUser.role !== 'admin') return notify("Только админ может удалять!");
-    if (confirm("Точно удалить пользователя?")) {
-        remove(ref(db, `users/${uid}`));
-        notify("Пользователь удален");
-    }
+    if (confirm("Удалить пользователя?")) remove(ref(db, `users/${uid}`));
 };
 
-// --- ЛОГИКА ПИКЕРА ЭМОДЗИ ---
+// --- ЛОГИКА ЭМОДЗИ ---
 document.addEventListener('DOMContentLoaded', () => {
     const globalPicker = document.getElementById('global-emoji-picker');
     const pickerElement = document.querySelector('emoji-picker');
 
     window.openEmojiPicker = (msgId, event) => {
-        event.stopPropagation(); 
-        if (!currentUser) return notify("Сначала войдите в аккаунт!");
-        
+        event.stopPropagation();
         activeReactMsgId = msgId;
         globalPicker.style.display = 'block';
-        
-        const btnRect = event.currentTarget.getBoundingClientRect();
-        
-        let topPos = btnRect.bottom + window.scrollY + 5;
-        let leftPos = btnRect.left + window.scrollX;
-        
-        if (topPos + 350 > window.innerHeight + window.scrollY) {
-            topPos = btnRect.top + window.scrollY - 355; 
-        }
-        if (leftPos + 320 > window.innerWidth) {
-            leftPos = window.innerWidth - 330;
-        }
-
-        globalPicker.style.top = topPos + 'px';
-        globalPicker.style.left = leftPos + 'px';
+        const rect = event.currentTarget.getBoundingClientRect();
+        globalPicker.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+        globalPicker.style.left = (rect.left + window.scrollX) + 'px';
     };
 
-    pickerElement.addEventListener('emoji-click', event => {
-        if (activeReactMsgId) {
-            const emoji = event.detail.unicode; 
-            toggleReaction(activeReactMsgId, emoji);
-            globalPicker.style.display = 'none'; 
-        }
-    });
-
-    document.addEventListener('click', (e) => {
-        if (globalPicker.style.display === 'block' && !globalPicker.contains(e.target)) {
-            globalPicker.style.display = 'none';
-        }
+    pickerElement.addEventListener('emoji-click', e => {
+        toggleReaction(activeReactMsgId, e.detail.unicode);
+        globalPicker.style.display = 'none';
     });
 });
