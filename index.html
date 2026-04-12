@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HuRuS Project | Premium Gaming</title>
+    <title>HuRuS Project</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -79,9 +79,8 @@
                     <ul class="features-list">
                         <li><i class="fas fa-check"></i> Тэг [VIP] в чате</li>
                         <li><i class="fas fa-check"></i> Скины на оружие (!ws, !knife)</li>
-                        <li><i class="fas fa-check"></i> Резервный слот (вход 21/20)</li>
-                        <li><i class="fas fa-check"></i> Уникальный цвет сообщений</li>
-                        <li><i class="fas fa-check"></i> +20% к опыту и кредитам</li>
+                        <li><i class="fas fa-check"></i> Резервный слот</li>
+                        <li><i class="fas fa-check"></i> Цветной чат</li>
                     </ul>
                     <div class="price">199 ₽ <span>/мес</span></div>
                     <button class="btn btn-shop w-100">Купить</button>
@@ -93,10 +92,9 @@
                     </div>
                     <ul class="features-list">
                         <li><i class="fas fa-check"></i> Всё от пакета VIP</li>
-                        <li><i class="fas fa-check"></i> Админ-меню (lite): кик, мут</li>
-                        <li><i class="fas fa-check"></i> Иммунитет от воут-кика</li>
-                        <li><i class="fas fa-check"></i> Кастомные модели агентов</li>
-                        <li><i class="fas fa-check"></i> Сброс статистики (!rs)</li>
+                        <li><i class="fas fa-check"></i> Админ-меню (lite)</li>
+                        <li><i class="fas fa-check"></i> Иммунитет от votekick</li>
+                        <li><i class="fas fa-check"></i> Скины агентов</li>
                     </ul>
                     <div class="price">499 ₽ <span>/мес</span></div>
                     <button class="btn btn-shop premium-btn w-100">Купить</button>
@@ -141,9 +139,15 @@
             <button id="tab-reg" onclick="setAuthMode('reg')">РЕГИСТРАЦИЯ</button>
         </div>
         <div class="modal-form">
-            <input type="text" id="authLogin" placeholder="Никнейм">
-            <input type="password" id="authPass" placeholder="Пароль" onkeydown="if(event.key==='Enter') handleAuth()">
-            <button class="btn btn-primary w-100" onclick="handleAuth()">ПРОДОЛЖИТЬ</button>
+            <div class="input-field">
+                <i class="fas fa-user"></i>
+                <input type="text" id="authLogin" placeholder="Никнейм">
+            </div>
+            <div class="input-field">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="authPass" placeholder="Пароль" onkeydown="if(event.key==='Enter') handleAuth()">
+            </div>
+            <button class="btn btn-primary w-100" style="margin-top: 10px;" onclick="handleAuth()">ПОДТВЕРДИТЬ</button>
         </div>
     </div>
 </div>
