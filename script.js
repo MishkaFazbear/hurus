@@ -18,24 +18,14 @@ const db = getDatabase(app);
 let currentUser = null;
 let allUsers = [];
 let authMode = 'login';
-let activeReactMsgId = null;
+let activeReactMsgId = null; 
 
-// Настройки кейсов (предметы)
-const items = [
-    { name: "AWP | Dragon Lore", rarity: "legendary", price: 50000 },
-    { name: "M4A4 | Howl", rarity: "legendary", price: 40000 },
-    { name: "AK-47 | Fire Serpent", rarity: "epic", price: 15000 },
-    { name: "Knife | Doppler", rarity: "epic", price: 20000 },
-    { name: "Glock | Fade", rarity: "rare", price: 5000 },
-    { name: "USP-S | Kill Confirmed", rarity: "rare", price: 3000 },
-    { name: "P250 | Sand Dune", rarity: "common", price: 10 }
-];
-
-// --- ОБРАБОТКА ВХОДА STEAM (ТВОЯ СИСТЕМА) ---
+// --- 1. ОБРАБОТКА ВОЗВРАТА ИЗ STEAM (ИСПРАВЛЕНО) ---
 const urlParams = new URLSearchParams(window.location.search);
-const steamNick = urlParams.get('nickname') || urlParams.get('name');
+const steamNick = urlParams.get('nickname') || urlParams.get('name'); // Бэкенд обычно шлет один из этих параметров
 if (steamNick) {
     localStorage.setItem('hurus_session', steamNick);
+    // Очищаем URL от параметров, чтобы не "логиниться" вечно при перезагрузке
     window.history.replaceState({}, document.title, window.location.pathname);
 }
 
@@ -43,6 +33,7 @@ if (steamNick) {
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
+        // ИСПРАВЛЕНО: Сохраняем ключи (uid), чтобы админка работала
         allUsers = data.users ? Object.entries(data.users).map(([id, val]) => ({ uid: id, ...val })) : [];
         renderChat(data.messages || {});
         
@@ -52,106 +43,77 @@ onValue(ref(db, '/'), (snapshot) => {
             if (found) {
                 currentUser = found;
                 updateUI();
-                renderInventory(); // Обновляем инвентарь при входе
             }
         }
         if (document.getElementById('admin').classList.contains('active')) renderAdmin();
     }
 });
 
-// --- ЛОГИКА КЕЙСОВ И ИНВЕНТАРЯ (ИСПРАВЛЕНО) ---
-window.openCase = (casePrice) => {
-    if (!currentUser) return notify("Сначала войдите в аккаунт!");
-    if (currentUser.balance < casePrice) return notify("Недостаточно средств!");
-
-    // Случайный предмет
-    const wonItem = items[Math.floor(Math.random() * items.length)];
-    const newBalance = currentUser.balance - casePrice;
+// --- ЧАТ И РЕАКЦИИ ---
+function renderChat(messagesObj) {
+    const box = document.getElementById('chatMessages');
+    const msgs = Object.entries(messagesObj).map(([id, data]) => ({ id, ...data }));
     
-    // Добавляем в инвентарь
-    const userInv = currentUser.inventory || [];
-    userInv.push({ ...wonItem, id: Date.now() });
+    box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => {
+        const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        let reactHtml = '';
+        if (m.reactions) {
+            reactHtml = Object.entries(m.reactions).map(([emoji, users]) => {
+                const userList = Object.keys(users);
+                const count = userList.length;
+                const hasMyReact = currentUser && users[currentUser.name] ? 'active' : '';
+                const names = userList.join(', ');
 
-    update(ref(db, `users/${currentUser.uid}`), {
-        balance: newBalance,
-        inventory: userInv
-    });
+                return `
+                    <div class="react-item ${hasMyReact}" onclick="toggleReaction('${m.id}', '${emoji}')" title="${names}">
+                        <span class="react-emoji">${emoji}</span>
+                        <span class="react-count">${count}</span>
+                    </div>
+                `;
+            }).join('');
+        }
 
-    notify(`Вы выбили: ${wonItem.name}!`);
-};
-
-function renderInventory() {
-    const box = document.getElementById('inventoryList');
-    if (!box || !currentUser) return;
-
-    if (!currentUser.inventory || currentUser.inventory.length === 0) {
-        box.innerHTML = '<div class="empty-msg">Ваш инвентарь пуст</div>';
-        return;
-    }
-
-    box.innerHTML = currentUser.inventory.map(item => `
-        <div class="item-card rarity-${item.rarity}">
-            <div class="item-name">${item.name}</div>
-            <div class="item-price">${item.price} ₽</div>
-        </div>
-    `).join('');
+        return `
+            <div class="msg">
+                <div class="msg-header">
+                    <span class="badge badge-${m.r}">${m.r}</span>
+                    <span class="msg-author">${m.u}</span>
+                    <span class="msg-time">${timeStr}</span>
+                </div>
+                <div class="msg-text">${m.t}</div>
+                <div class="msg-footer">
+                    <div class="reactions-container">
+                        ${reactHtml}
+                        <button class="btn-add-emoji" onclick="openEmojiPicker('${m.id}', event)">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
 }
 
-// --- ПАНЕЛЬ УПРАВЛЕНИЯ (ИСПРАВЛЕНО) ---
-window.renderAdmin = () => {
-    const list = document.getElementById('adminUserList');
-    if (!list) return;
-    list.innerHTML = allUsers.map(u => `
-        <tr>
-            <td>${u.name}</td>
-            <td>${u.balance || 0} ₽</td>
-            <td>
-                <button class="btn-ok" onclick="promptAddBalance('${u.uid}')">Добавить ₽</button>
-            </td>
-            <td>
-                <select onchange="changeRole('${u.uid}', this.value)">
-                    <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
-                    <option value="vip" ${u.role === 'vip' ? 'selected' : ''}>VIP</option>
-                    <option value="moder" ${u.role === 'moder' ? 'selected' : ''}>Moder</option>
-                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                </select>
-            </td>
-            <td>
-                <button class="btn-del" onclick="clearUserInventory('${u.uid}')" style="background:#f39c12; margin-bottom:5px;">Очистить инв.</button>
-                <button class="btn-del" onclick="deleteUser('${u.uid}')">Удалить</button>
-            </td>
-        </tr>
-    `).join('');
+window.toggleReaction = async (msgId, emoji) => {
+    if (!currentUser) return notify("Сначала войдите в аккаунт!");
+    const reactRef = ref(db, `messages/${msgId}/reactions/${emoji}/${currentUser.name}`);
+    const snap = await get(reactRef);
+    if (snap.exists()) remove(reactRef);
+    else set(reactRef, true);
 };
 
-// Выдача баланса (Админ пишет сколько добавить)
-window.promptAddBalance = (uid) => {
-    const amount = prompt("Введите сумму, которую хотите добавить на баланс:");
-    if (amount === null || amount === "" || isNaN(amount)) return;
-    
-    const u = allUsers.find(user => user.uid === uid);
-    if (u) {
-        const newTotal = (u.balance || 0) + parseInt(amount);
-        update(ref(db, `users/${uid}`), { balance: newTotal });
-        notify(`Баланс ${u.name} пополнен на ${amount}₽`);
-    }
+window.sendChatMessage = () => {
+    const inp = document.getElementById('chatInput');
+    if (!currentUser || !inp.value.trim()) return;
+    push(ref(db, 'messages'), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
+    inp.value = '';
 };
 
-// Очистка инвентаря из панели
-window.clearUserInventory = (uid) => {
-    if (confirm("Вы точно хотите очистить инвентарь этого пользователя?")) {
-        update(ref(db, `users/${uid}`), { inventory: null });
-        notify("Инвентарь очищен");
-    }
-};
+// --- АВТОРИЗАЦИЯ И ПРОФИЛЬ ---
 
-window.changeRole = (uid, newRole) => update(ref(db, `users/${uid}`), { role: newRole });
-window.deleteUser = (uid) => confirm("Удалить пользователя?") && remove(ref(db, `users/${uid}`));
-
-// --- ВСЁ ОСТАЛЬНОЕ (БЕЗ ИЗМЕНЕНИЙ) ---
-window.loginWithSteam = () => window.location.href = "https://hurus-backend.onrender.com/auth/steam";
-window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
-
+// ИСПРАВЛЕНО: Функция переключения вкладок (была в HTML, но не в JS)
 window.setAuthMode = (mode) => {
     authMode = mode;
     document.getElementById('tab-login').classList.toggle('active', mode === 'login');
@@ -164,49 +126,79 @@ window.handleAuth = async () => {
     const l = document.getElementById('authLogin').value.trim();
     const p = document.getElementById('authPass').value.trim();
     if (!l || !p) return notify("Заполните поля!");
+
     if (authMode === 'login') {
         const found = allUsers.find(u => u.name === l && u.pass === p);
-        if (!found) return notify("Ошибка!");
+        if (!found) return notify("Ошибка входа!");
         localStorage.setItem('hurus_session', found.name);
     } else {
-        if (allUsers.find(u => u.name === l)) return notify("Занято!");
-        await push(ref(db, 'users'), { name: l, pass: p, balance: 0, role: 'user', inventory: [] });
+        if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
+        await push(ref(db, 'users'), { name: l, pass: p, balance: 0, role: 'user', avatar: '' });
         localStorage.setItem('hurus_session', l);
     }
     location.reload();
 };
 
+window.loginWithSteam = () => window.location.href = "https://hurus-backend.onrender.com/auth/steam";
+window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
+
 function updateUI() {
     const isAdmin = ['admin', 'moder'].includes(currentUser.role);
     document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('clearChatBtn').style.display = isAdmin ? 'block' : 'none';
+    
     document.getElementById('authZone').innerHTML = `
         <div class="profile-info-block">
-            <div class="profile-nick">${currentUser.name}</div>
-            <div class="profile-balance">${currentUser.balance} ₽</div>
-            <button class="btn-logout" onclick="logout()">Выйти</button>
+            ${currentUser.avatar ? `<img src="${currentUser.avatar}" class="profile-avatar">` : '<i class="fas fa-user"></i>'}
+            <div class="profile-text-data">
+                <div class="profile-nick">${currentUser.name}</div>
+                <div class="profile-balance">${currentUser.balance} ₽</div>
+            </div>
+            <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     `;
 }
 
-function renderChat(messagesObj) {
-    const box = document.getElementById('chatMessages');
-    const msgs = Object.entries(messagesObj).map(([id, data]) => ({ id, ...data }));
-    box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => `
-        <div class="msg">
-            <div class="msg-header"><span class="badge badge-${m.r}">${m.r}</span> <span class="msg-author">${m.u}</span></div>
-            <div class="msg-text">${m.t}</div>
-        </div>
+// --- ПАНЕЛЬ УПРАВЛЕНИЯ (ИСПРАВЛЕНО) ---
+window.renderAdmin = () => {
+    const list = document.getElementById('adminUserList');
+    if (!list) return;
+    list.innerHTML = allUsers.map(u => `
+        <tr>
+            <td>${u.name}</td>
+            <td>${u.balance || 0} ₽</td>
+            <td><button class="btn-ok" onclick="addBalance('${u.uid}', 100)">+100</button></td>
+            <td>
+                <select onchange="changeRole('${u.uid}', this.value)">
+                    <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
+                    <option value="vip" ${u.role === 'vip' ? 'selected' : ''}>VIP</option>
+                    <option value="moder" ${u.role === 'moder' ? 'selected' : ''}>Moder</option>
+                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                </select>
+            </td>
+            <td><button class="btn-del" onclick="deleteUser('${u.uid}')"><i class="fas fa-trash"></i></button></td>
+        </tr>
     `).join('');
-    box.scrollTop = box.scrollHeight;
-}
-
-window.sendChatMessage = () => {
-    const inp = document.getElementById('chatInput');
-    if (!currentUser || !inp.value.trim()) return;
-    push(ref(db, 'messages'), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
-    inp.value = '';
 };
 
+window.addBalance = (uid, amount) => {
+    const u = allUsers.find(user => user.uid === uid);
+    if (u) update(ref(db, `users/${uid}`), { balance: (u.balance || 0) + parseInt(amount) });
+};
+
+window.changeRole = (uid, newRole) => {
+    update(ref(db, `users/${uid}`), { role: newRole });
+};
+
+window.deleteUser = (uid) => {
+    if (confirm("Удалить пользователя?")) remove(ref(db, `users/${uid}`));
+};
+
+window.clearChat = () => {
+    if (confirm("Очистить чат?")) set(ref(db, 'messages'), null);
+};
+
+// --- ВСПОМОГАТЕЛЬНОЕ ---
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -220,3 +212,22 @@ window.notify = (t) => {
     toast.innerText = t; toast.style.display = 'block';
     setTimeout(() => toast.style.display = 'none', 3000);
 };
+
+// Логика пикера эмодзи
+document.addEventListener('DOMContentLoaded', () => {
+    const globalPicker = document.getElementById('global-emoji-picker');
+    const pickerElement = document.querySelector('emoji-picker');
+    window.openEmojiPicker = (msgId, event) => {
+        event.stopPropagation();
+        if (!currentUser) return notify("Сначала войдите!");
+        activeReactMsgId = msgId;
+        globalPicker.style.display = 'block';
+        const rect = event.currentTarget.getBoundingClientRect();
+        globalPicker.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+        globalPicker.style.left = (rect.left + window.scrollX) + 'px';
+    };
+    pickerElement.addEventListener('emoji-click', e => {
+        toggleReaction(activeReactMsgId, e.detail.unicode);
+        globalPicker.style.display = 'none';
+    });
+});
