@@ -165,6 +165,115 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .page-section { display: none; }
 .page-section.active { display: block; animation: fadeIn 0.4s; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+/* Новая кнопка очистки чата */
+.btn-clear-chat {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: var(--danger);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn-clear-chat:hover {
+    background: var(--danger);
+    color: #fff;
+}
+
+/* Контейнер реакций */
+.reactions-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-top: 10px;
+}
+
+/* Сама плашка реакции */
+.react-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: 0.2s;
+    user-select: none;
+}
+.react-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+}
+.react-item.active {
+    background: rgba(157, 80, 187, 0.15);
+    border-color: var(--primary);
+}
+.react-emoji { font-size: 14px; }
+.react-count { font-size: 12px; font-weight: 700; color: var(--text-dim); }
+.react-item.active .react-count { color: var(--primary); }
+
+/* Кнопка плюса и выпадающее меню */
+.add-react-dropdown {
+    position: relative;
+    display: inline-block;
+}
+.btn-add-emoji {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: 0.2s;
+}
+.btn-add-emoji:hover {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.emoji-menu {
+    position: absolute;
+    bottom: 35px;
+    left: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 5px;
+    display: none;
+    gap: 5px;
+    z-index: 10;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+.add-react-dropdown:hover .emoji-menu {
+    display: flex;
+}
+.emoji-menu span {
+    font-size: 18px;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.1s;
+}
+.emoji-menu span:hover {
+    background: rgba(255,255,255,0.1);
+    transform: scale(1.2);
+}
+
+/* Подсказка имен (браузерная) */
+.react-item[title]:hover::after {
+    content: attr(title);
+    /* Здесь можно добавить кастомный стиль, но браузерный title работает по дефолту */
+}
 
 /* МОДАЛКИ */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(5px); }
