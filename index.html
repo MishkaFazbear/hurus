@@ -42,7 +42,34 @@
                         <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
                     </div>
                 </div>
+                <div class="server-card">
+                    <img src="https://daddyskins.com/blog/wp-content/uploads/2024/09/cs2-inferno-callouts.webp" alt="Inferno">
+                    <div class="server-info">
+                        <h3>INFERNO CLASSIC</h3>
+                        <div class="progress-bg"><div class="progress-bar" style="width: 40%"></div></div>
+                        <p>8 / 20 игроков</p>
+                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
+                    </div>
                 </div>
+                <div class="server-card">
+                    <img src="https://cloud.cybershoke.net/img/maps/2/de_overpass.jpg" alt="Overpass">
+                    <div class="server-info">
+                        <h3>OVERPASS RETAKE</h3>
+                        <div class="progress-bg"><div class="progress-bar" style="width: 65%"></div></div>
+                        <p>13 / 20 игроков</p>
+                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
+                    </div>
+                </div>
+                <div class="server-card">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTK4bQmqhlfqFF4GSggiPigqtAuvb9CCC8Wcg&s" alt="Nuke">
+                    <div class="server-info">
+                        <h3>NUKE 24/7</h3>
+                        <div class="progress-bg"><div class="progress-bar" style="width: 20%"></div></div>
+                        <p>4 / 20 игроков</p>
+                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div id="cases" class="page-section">
@@ -62,7 +89,8 @@
 
         <div id="inventory" class="page-section">
             <h1 class="section-title">Мои скины</h1>
-            <div id="inventoryGrid" class="inventory-grid"></div>
+            <div id="inventoryGrid" class="inventory-grid">
+                </div>
         </div>
 
         <div id="admin" class="page-section">
@@ -86,7 +114,32 @@
         <div id="shop" class="page-section">
             <h1 class="section-title">Привилегии</h1>
             <div class="shop-grid">
+                <div class="shop-item vip">
+                    <div class="shop-badge">SILVER</div>
+                    <div class="shop-icon"><i class="fas fa-crown"></i></div>
+                    <h3>VIP STATUS</h3>
+                    <div class="shop-price">199 <span>₽/мес</span></div>
+                    <ul class="shop-features">
+                        <li><i class="fas fa-check"></i> Тэг [VIP] в чате</li>
+                        <li><i class="fas fa-check"></i> Доступ к скинам !ws</li>
+                        <li><i class="fas fa-check"></i> Резервный слот</li>
+                    </ul>
+                    <button class="btn-buy" onclick="notify('В разработке...')">КУПИТЬ</button>
                 </div>
+
+                <div class="shop-item premium">
+                    <div class="shop-badge">GOLD</div>
+                    <div class="shop-icon"><i class="fas fa-star"></i></div>
+                    <h3>PREMIUM</h3>
+                    <div class="shop-price">499 <span>₽/мес</span></div>
+                    <ul class="shop-features">
+                        <li><i class="fas fa-check"></i> Тэг [PREMIUM]</li>
+                        <li><i class="fas fa-check"></i> Модели агентов</li>
+                        <li><i class="fas fa-check"></i> Lite Админка</li>
+                    </ul>
+                    <button class="btn-buy" onclick="notify('В разработке...')">КУПИТЬ</button>
+                </div>
+            </div>
         </div>
     </section>
 

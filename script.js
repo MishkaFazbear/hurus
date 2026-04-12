@@ -19,17 +19,22 @@ let currentUser = null;
 let allUsers = [];
 let authMode = 'login';
 
+// СИНХРОНИЗАЦИЯ
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
         allUsers = data.users ? Object.values(data.users) : [];
         renderChat(data.messages ? Object.values(data.messages) : []);
         
+        // Проверка сессии и моментальный выход, если аккаунт удален
         const savedNick = localStorage.getItem('hurus_session');
-        if (savedNick && !currentUser) {
+        if (savedNick) {
             currentUser = allUsers.find(u => u.name === savedNick);
-        } else if (currentUser) {
-            currentUser = allUsers.find(u => u.name === currentUser.name);
+            if (!currentUser) {
+                // Если ник в сохраненной сессии есть, а в БД его больше нет — выкидываем
+                logout();
+                return;
+            }
         }
 
         if (currentUser) {
@@ -40,6 +45,7 @@ onValue(ref(db, '/'), (snapshot) => {
     }
 });
 
+// АВТОРИЗАЦИЯ
 window.handleAuth = async () => {
     const l = document.getElementById('authLogin').value.trim();
     const p = document.getElementById('authPass').value.trim();
@@ -55,7 +61,7 @@ window.handleAuth = async () => {
         const found = allUsers.find(u => u.name === l && u.pass === p);
         if (!found) return notify("Неверный вход!");
         currentUser = found; 
-        localStorage.setItem('hurus_session', currentUser.name);
+        localStorage.setItem('hurus_session', currentUser.name); // Сохраняем сессию
         updateUI(); 
         closeModal();
         notify("Добро пожаловать!");
@@ -63,7 +69,7 @@ window.handleAuth = async () => {
 };
 
 window.logout = () => {
-    localStorage.removeItem('hurus_session');
+    localStorage.removeItem('hurus_session'); // Удаляем сессию
     location.reload(); 
 };
 
@@ -84,6 +90,7 @@ function updateUI() {
     }
 }
 
+// ЧАТ
 window.sendChatMessage = () => {
     const inp = document.getElementById('chatInput');
     if (!currentUser || !inp.value.trim()) return;
@@ -103,12 +110,13 @@ function renderChat(msgs) {
     box.scrollTop = box.scrollHeight;
 }
 
+// КЕЙСЫ
 const skins = [
     {n: "AWP | Dragon Lore", r: "legendary", img: "https://stash.clash.gg/storage/img/skin_sideview/s422.png"},
     {n: "Karambit | Doppler", r: "legendary", img: "https://community.fastly.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyL6kJ_m-B1Q7uCvZaZkNM-SA1iUzv5mvOR7cDm7lA4i4gKJk4jxNWXFb1cpDJR2FOFbsBTql9bjYbzq7gPZiN1MxH7_2ytNuCdpte1UB_Ui5OSJ2GbkVqni/330x192?allow_animated=1"},
     {n: "AK-47 | Neon Rider", r: "epic", img: "https://ss.bitskins.com/ab/ab6308d8e743e1fcc04fd5b10fd48489-front.webp"},
     {n: "M4A4 | Howl", r: "legendary", img: "https://ss.bitskins.com/63/637aae983f5b92f555787c7d4e7ba3e7-front.webp?2"},
-    {n: "Glock-18 | Fade", r: "rare", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXawvlE7ptxbIp-WiCbyqRL-CRVOKKthwa1A&s"},
+    {n: "Glock-18 | Fade", r: "rare", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXawvlE7ptxbIp-WiCbyqRL-CRVOKKthwa1A&shttps://images.steamusercontent.com/ugc/2470862704803492244/EF1CE85BE7C1E97F4DD6119BF6C53763588CE3DF/"},
     {n: "P250 | Sand Dune", r: "common", img: "https://pub-5f12f7508ff04ae5925853dee0438460.r2.dev/data/images/wiki_gf1Kc6S_preview.png"}
 ];
 
@@ -123,6 +131,8 @@ window.openCase = () => {
     setTimeout(() => {
         const win = skins[Math.floor(Math.random() * skins.length)];
         const currentInv = currentUser.inventory ? [...Object.values(currentUser.inventory)] : [];
+        
+        // Добавляем ID, чтобы предметы были уникальными
         currentInv.push({ ...win, id: Date.now() });
 
         update(ref(db, 'users/' + currentUser.name), { 
@@ -130,8 +140,9 @@ window.openCase = () => {
             inventory: currentInv
         });
 
+        // Вывод результата с уменьшенной картинкой
         document.getElementById('caseDisplay').innerHTML = `
-            <img src="${win.img}" style="width: 140px; height: auto; display: block; margin: 10px auto;">
+            <img src="${win.img}" style="width: 140px; height: auto; display: block; margin: 10px auto; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">
             <span class="skin-${win.r}" style="font-weight: 800;">${win.n}</span>
         `;
         
@@ -158,6 +169,7 @@ function updateInventory() {
     `).join('');
 }
 
+// STAFF
 function renderAdmin() {
     const list = document.getElementById('adminUserList');
     list.innerHTML = allUsers.map(u => `
@@ -165,13 +177,14 @@ function renderAdmin() {
             <td><b>${u.name}</b></td>
             <td>${u.balance} ₽</td>
             <td>
-                <input type="number" id="sum-${u.name}" placeholder="Сумма" style="width:70px;">
+                <input type="number" id="sum-${u.name}" placeholder="Сумма" style="width:70px; background:#000; color:#fff; border:1px solid var(--border); padding:4px;">
                 <button onclick="giveBal('${u.name}')" class="btn-ok">+</button>
             </td>
             <td><span class="badge badge-${u.role}">${u.role}</span></td>
             <td>
-                <button onclick="removeUser('${u.name}')" class="btn-del"><i class="fas fa-trash"></i></button>
-                <select onchange="changeRole('${u.name}', this.value)">
+                <button onclick="removeUser('${u.name}')" class="btn-del" title="Удалить юзера"><i class="fas fa-trash"></i></button>
+                <button onclick="clearInventory('${u.name}')" class="btn-del" title="Очистить инвентарь" style="color: #facc15;"><i class="fas fa-broom"></i></button>
+                <select onchange="changeRole('${u.name}', this.value)" style="background:#000; color:#fff; border:1px solid var(--border); padding:4px;">
                     <option value="">Роль...</option>
                     <option value="user">User</option>
                     <option value="vip">VIP</option>
@@ -198,12 +211,27 @@ window.removeUser = (name) => {
     if (confirm(`Удалить ${name}?`)) remove(ref(db, 'users/' + name));
 };
 
+// Функция очистки инвентаря
+window.clearInventory = (name) => {
+    if (confirm(`Точно удалить все скины у ${name}?`)) {
+        update(ref(db, 'users/' + name), { inventory: [] });
+        notify(`Инвентарь ${name} очищен!`);
+    }
+};
+
+// ОБЩЕЕ
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('.main-nav button').forEach(b => b.classList.remove('active'));
     document.getElementById('nav-'+id)?.classList.add('active');
+    
+    // СРАЗУ РЕНДЕРИМ АДМИНКУ ПРИ ОТКРЫТИИ
+    if (id === 'admin') {
+        renderAdmin();
+    }
 };
+
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
 window.closeModal = () => document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
 window.setAuthMode = (m) => {
