@@ -21,6 +21,12 @@ let allLogs = [];
 let authMode = 'login';
 let activeReactMsgId = null; 
 
+// --- ПЕРЕМЕННЫЕ ДЛЯ ЧАТА ---
+let currentChatTab = 'global';
+let globalMessages = {};
+let catMessages = {};
+const catUsers = ['mishkafazbear', 'amonphous', 'SharizMound'];
+
 // --- 1. ОБРАБОТКА ВОЗВРАТА ИЗ STEAM ---
 const urlParams = new URLSearchParams(window.location.search);
 const steamNick = urlParams.get('nickname') || urlParams.get('name'); 
@@ -34,9 +40,13 @@ onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
         allUsers = data.users ? Object.entries(data.users).map(([id, val]) => ({ uid: id, ...val })) : [];
-        allLogs = data.logs ? Object.values(data.logs).sort((a, b) => b.time - a.time) : []; // Логи (новые сверху)
+        allLogs = data.logs ? Object.values(data.logs).sort((a, b) => b.time - a.time) : [];
         
-        renderChat(data.messages || {});
+        globalMessages = data.messages || {};
+        catMessages = data.cat_messages || {};
+        
+        // Рендерим нужный чат
+        renderChat(currentChatTab === 'global' ? globalMessages : catMessages);
         
         const savedNick = localStorage.getItem('hurus_session');
         if (savedNick) {
@@ -44,11 +54,11 @@ onValue(ref(db, '/'), (snapshot) => {
             if (found) {
                 currentUser = found;
                 updateUI();
-                renderInventory(); // Обновляем инвентарь при синхронизации
+                renderInventory();
             }
         }
         
-        if (document.getElementById('admin').classList.contains('active')) {
+        if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) {
             renderAdmin();
         }
     }
@@ -82,30 +92,28 @@ window.openCase = () => {
     if (!currentUser) return notify("Сначала войдите в аккаунт!");
     if ((currentUser.balance || 0) < 100) return notify("Недостаточно средств (нужно 100 ₽)!");
 
-    // Списываем 100 рублей
     update(ref(db, `users/${currentUser.uid}`), { balance: currentUser.balance - 100 });
 
-    // Система шансов и предметов
     const rand = Math.random();
     let item = {};
 
-    if (rand < 0.05) { // 5% шанс на Нож (Легендарное)
-        item = { name: "Karambit | Lore", rarity: "legendary", img: "https://community.fastly.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpovbSsLQJf2P_2fSlE-Nm1kZ-fkvbgIKzYmX1UvZZwi-rAoNyg2FXh-kNvZmiid4OSdlM7ZwvS-VPql-_s0ZLu6MicznNj7nUi4neMlxu31xRMag" };
-    } else if (rand < 0.20) { // 15% шанс на Тайное
-        item = { name: "AK-47 | Bloodsport", rarity: "epic", img: "https://community.fastly.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpot7HxfDhjxszJemkV092lnYmGmOHLPr7Vn35cpsBziLDH84-i2VLkqkVuYW-hLYWdJFA4ZQrW-1Pqx-2615-56pzBmyFj" };
-    } else if (rand < 0.50) { // 30% шанс на Засекреченное
-        item = { name: "M4A4 | Neo-Noir", rarity: "rare", img: "https://community.fastly.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpou-6kejhjxszFJTwW09-zl5KYqODzNq7FqXlQ7MBOh-zF_Jn4xlHgrxE9NzyiIIWUclI5ZAqBrAS-l-a61MW9upTKyCRgvyUr7Hnbmgv330_vS91dSA" };
-    } else { // 50% шанс на Армейское
-        item = { name: "Glock-18 | Water Elemental", rarity: "common", img: "https://community.fastly.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgposbaqKAFlpjwhJzB14-23hYS0m_7zO6-fzj9V7cAl2b-TopOkiwTm-UdkYWHzJoKXI1I9YAyCqFe4kri-hcLouZ3LnSMxunZysyvYmQv3308IIfkXwg" };
+    // 👇 ВСТАВЬ СЮДА НАЗВАНИЯ И ССЫЛКИ НА СВОИ СТАРЫЕ КАРТИНКИ 👇
+    if (rand < 0.05) { 
+        item = { name: "Твое Легендарное", rarity: "legendary", img: "ССЫЛКА_НА_СТАРУЮ_КАРТИНКУ" };
+    } else if (rand < 0.20) { 
+        item = { name: "Твое Тайное", rarity: "epic", img: "ССЫЛКА_НА_СТАРУЮ_КАРТИНКУ" };
+    } else if (rand < 0.50) { 
+        item = { name: "Твое Засекреченное", rarity: "rare", img: "ССЫЛКА_НА_СТАРУЮ_КАРТИНКУ" };
+    } else { 
+        item = { name: "Твое Армейское", rarity: "common", img: "ССЫЛКА_НА_СТАРУЮ_КАРТИНКУ" };
     }
+    // 👆 ======================================================= 👆
     
     item.time = Date.now();
 
-    // Выдаем предмет в инвентарь
     push(ref(db, `users/${currentUser.uid}/inventory`), item);
     addLog(`Пользователь ${currentUser.name} открыл кейс и выбил ${item.name}`);
 
-    // Показываем результат
     const caseDisplay = document.getElementById('caseDisplay');
     caseDisplay.innerHTML = `<span class="skin-${item.rarity}" style="animation: fadeIn 0.5s;">Вам выпало: <br>${item.name}</span>`;
 };
@@ -131,9 +139,25 @@ function renderInventory() {
 
 
 // --- ЧАТ И РЕАКЦИИ ---
+window.switchChat = (tab) => {
+    currentChatTab = tab;
+    
+    // Стили вкладок
+    document.getElementById('tab-global').style.color = tab === 'global' ? 'var(--primary)' : 'var(--text-dim)';
+    document.getElementById('tab-global').style.borderBottom = tab === 'global' ? '2px solid var(--primary)' : 'none';
+    
+    const catTab = document.getElementById('tab-cats');
+    if (catTab) {
+        catTab.style.color = tab === 'cats' ? '#ff66b2' : 'var(--text-dim)';
+        catTab.style.borderBottom = tab === 'cats' ? '2px solid #ff66b2' : 'none';
+    }
+
+    renderChat(tab === 'global' ? globalMessages : catMessages);
+};
+
 function renderChat(messagesObj) {
     const box = document.getElementById('chatMessages');
-    const msgs = Object.entries(messagesObj).map(([id, data]) => ({ id, ...data }));
+    const msgs = Object.entries(messagesObj || {}).map(([id, data]) => ({ id, ...data }));
     
     box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => {
         const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -144,10 +168,8 @@ function renderChat(messagesObj) {
                 const userList = Object.keys(users);
                 const count = userList.length;
                 const hasMyReact = currentUser && users[currentUser.name] ? 'active' : '';
-                const names = userList.join(', ');
-
                 return `
-                    <div class="react-item ${hasMyReact}" onclick="toggleReaction('${m.id}', '${emoji}')" title="${names}">
+                    <div class="react-item ${hasMyReact}" onclick="toggleReaction('${m.id}', '${emoji}')" title="${userList.join(', ')}">
                         <span class="react-emoji">${emoji}</span>
                         <span class="react-count">${count}</span>
                     </div>
@@ -179,7 +201,8 @@ function renderChat(messagesObj) {
 
 window.toggleReaction = async (msgId, emoji) => {
     if (!currentUser) return notify("Сначала войдите в аккаунт!");
-    const reactRef = ref(db, `messages/${msgId}/reactions/${emoji}/${currentUser.name}`);
+    const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
+    const reactRef = ref(db, `${dbPath}/${msgId}/reactions/${emoji}/${currentUser.name}`);
     const snap = await get(reactRef);
     if (snap.exists()) remove(reactRef);
     else set(reactRef, true);
@@ -188,7 +211,9 @@ window.toggleReaction = async (msgId, emoji) => {
 window.sendChatMessage = () => {
     const inp = document.getElementById('chatInput');
     if (!currentUser || !inp.value.trim()) return;
-    push(ref(db, 'messages'), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
+    
+    const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
+    push(ref(db, dbPath), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
     inp.value = '';
 };
 
@@ -224,7 +249,8 @@ window.logout = () => { localStorage.removeItem('hurus_session'); location.reloa
 function updateUI() {
     const isAdmin = ['admin', 'moder'].includes(currentUser.role);
     document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
-    document.getElementById('clearChatBtn').style.display = isAdmin ? 'block' : 'none';
+    const clearChatBtn = document.getElementById('clearChatBtn');
+    if (clearChatBtn) clearChatBtn.style.display = isAdmin ? 'block' : 'none';
     
     document.getElementById('authZone').innerHTML = `
         <div class="profile-info-block">
@@ -236,6 +262,18 @@ function updateUI() {
             <button class="btn-logout" onclick="logout()" title="Выйти"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     `;
+
+    // Показываем Чат Котиков только для своих
+    const chatTabs = document.getElementById('chatTabs');
+    if (catUsers.includes(currentUser.name)) {
+        if (!document.getElementById('tab-cats')) {
+            chatTabs.innerHTML += `<button id="tab-cats" onclick="switchChat('cats')" style="background: none; border: none; color: var(--text-dim); cursor: pointer; font-weight: 800; padding: 5px; margin-left: 10px;">Чат Котиков <3</button>`;
+        }
+    } else {
+        const catTab = document.getElementById('tab-cats');
+        if (catTab) catTab.remove();
+        if (currentChatTab === 'cats') switchChat('global');
+    }
 }
 
 // --- ПАНЕЛЬ УПРАВЛЕНИЯ (ADMIN) ---
@@ -268,13 +306,12 @@ window.renderAdmin = () => {
         </tr>
     `).join('');
     
-    renderLogs(); // Отрисовываем логи вместе с админкой
+    renderLogs();
 };
 
 window.addBalance = (uid) => {
     const inp = document.getElementById(`balInput_${uid}`);
     const amount = parseInt(inp.value);
-    
     if (isNaN(amount) || amount <= 0) return notify("Введите корректную сумму!");
 
     const u = allUsers.find(user => user.uid === uid);
@@ -294,7 +331,7 @@ window.changeRole = (uid, newRole) => {
 
 window.clearInventory = (uid) => {
     const u = allUsers.find(user => user.uid === uid);
-    if (confirm(`Вы уверены, что хотите полностью очистить инвентарь пользователя ${u.name}?`)) {
+    if (confirm(`Очистить инвентарь ${u.name}?`)) {
         remove(ref(db, `users/${uid}/inventory`));
         addLog(`Администратор ${currentUser.name} очистил инвентарь пользователя ${u.name}`);
         notify("Инвентарь очищен");
@@ -337,7 +374,6 @@ window.notify = (t) => {
     setTimeout(() => toast.style.display = 'none', 3000);
 };
 
-// Логика пикера эмодзи
 document.addEventListener('DOMContentLoaded', () => {
     const globalPicker = document.getElementById('global-emoji-picker');
     const pickerElement = document.querySelector('emoji-picker');
