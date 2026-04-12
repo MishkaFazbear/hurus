@@ -13,11 +13,6 @@
     --vip-color: #facc15;
     --text: #ffffff;
     --text-dim: #94a3b8;
-    
-    --legendary: #eb4b4b;
-    --epic: #d32ee6;
-    --rare: #4b69ff;
-    --common: #b0c3d9;
 }
 
 * { box-sizing: border-box; outline: none; }
@@ -40,7 +35,7 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .main-nav button { background: none; border: none; color: var(--text-dim); font-weight: 600; cursor: pointer; padding: 10px 15px; transition: 0.3s; }
 .main-nav button.active { color: #fff; text-shadow: 0 0 10px var(--primary); }
 
-/* ОБНОВЛЕННЫЙ БЛОК ПРОФИЛЯ */
+/* БЛОК ПРОФИЛЯ */
 .profile-info-block { 
     display: flex; 
     align-items: center; 
@@ -120,24 +115,9 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .shop-features i { color: var(--success); }
 .btn-buy { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--primary-grad); color: #fff; font-weight: 800; cursor: pointer; }
 
-/* КЕЙСЫ */
-.case-visual { display: flex; align-items: center; gap: 40px; padding: 30px; }
-.case-res { font-size: 1.5rem; font-weight: 800; margin: 25px 0; min-height: 40px; color: var(--primary); }
-
-/* ИНВЕНТАРЬ */
-.inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-.inventory-item { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 15px; text-align: center; transition: 0.3s; display: flex; flex-direction: column; min-height: 180px; }
-.item-icon { width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
-.item-icon img { max-width: 100%; max-height: 100%; object-fit: contain; }
-.item-name { font-size: 11px; font-weight: 700; margin-top: auto; }
-
-.skin-legendary { color: var(--legendary); text-shadow: 0 0 5px var(--legendary); }
-.skin-epic { color: var(--epic); }
-.skin-rare { color: var(--rare); }
-
 /* ЧАТ */
 .chat-wrapper { background: var(--card); border-radius: 20px; border: 1px solid var(--border); height: 650px; display: flex; flex-direction: column; overflow: hidden; }
-.chat-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; font-weight: 800; background: rgba(0,0,0,0.2); }
+.chat-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: flex-start; gap: 15px; font-weight: 800; background: rgba(0,0,0,0.2); }
 .chat-body { flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; }
 .msg { margin-bottom: 10px; line-height: 1.5; }
 .chat-footer { padding: 15px; display: flex; gap: 10px; background: rgba(0,0,0,0.3); }
@@ -165,22 +145,6 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .page-section { display: none; }
 .page-section.active { display: block; animation: fadeIn 0.4s; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-/* Новая кнопка очистки чата */
-.btn-clear-chat {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: var(--danger);
-    padding: 5px 10px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.2s;
-}
-.btn-clear-chat:hover {
-    background: var(--danger);
-    color: #fff;
-}
 
 /* Контейнер реакций */
 .reactions-container {
@@ -279,8 +243,6 @@ emoji-picker {
     .header-flex { flex-direction: column; height: auto; padding: 15px 0; gap: 15px; }
     .main-nav { flex-wrap: wrap; justify-content: center; }
     .main-layout { grid-template-columns: 1fr; margin-top: 20px; }
-    .case-visual { flex-direction: column; text-align: center; gap: 20px; padding: 20px 10px; }
-    .inventory-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
     .chat-wrapper { height: 500px; margin-bottom: 20px; }
 }
 @media (max-width: 480px) {

@@ -45,7 +45,6 @@ onValue(ref(db, '/'), (snapshot) => {
         globalMessages = data.messages || {};
         catMessages = data.cat_messages || {};
         
-        // Рендерим нужный чат
         renderChat(currentChatTab === 'global' ? globalMessages : catMessages);
         
         const savedNick = localStorage.getItem('hurus_session');
@@ -54,7 +53,6 @@ onValue(ref(db, '/'), (snapshot) => {
             if (found) {
                 currentUser = found;
                 updateUI();
-                renderInventory();
             }
         }
         
@@ -66,7 +64,7 @@ onValue(ref(db, '/'), (snapshot) => {
 
 // --- СИСТЕМА ЛОГОВ ---
 function addLog(text) {
-    push(ref(db, 'logs'), { text, time: Date.now() });
+    return push(ref(db, 'logs'), { text, time: Date.now() });
 }
 
 function renderLogs() {
@@ -86,63 +84,10 @@ function renderLogs() {
     }).join('');
 }
 
-
-// --- КЕЙСЫ И ИНВЕНТАРЬ ---
-window.openCase = () => {
-    if (!currentUser) return notify("Сначала войдите в аккаунт!");
-    if ((currentUser.balance || 0) < 100) return notify("Недостаточно средств (нужно 100 ₽)!");
-
-    update(ref(db, `users/${currentUser.uid}`), { balance: currentUser.balance - 100 });
-
-    const rand = Math.random();
-    let item = {};
-
-    // 👇 ВСТАВЬ СЮДА НАЗВАНИЯ И ССЫЛКИ НА СВОИ СТАРЫЕ КАРТИНКИ 👇
-    if (rand < 0.05) { 
-        item = { name: "Твое Легендарное", rarity: "legendary", img: "ССЫЛКА_НА_СТАРУЮ_КАРТИНКУ" };
-    } else if (rand < 0.20) { 
-        item = { name: "Твое Тайное", rarity: "epic", img: "ССЫЛКА_НА_СТАРУЮ_КАРТИНКУ" };
-    } else if (rand < 0.50) { 
-        item = { name: "Твое Засекреченное", rarity: "rare", img: "ССЫЛКА_НА_СТАРУЮ_КАРТИНКУ" };
-    } else { 
-        item = { name: "Твое Армейское", rarity: "common", img: "ССЫЛКА_НА_СТАРУЮ_КАРТИНКУ" };
-    }
-    // 👆 ======================================================= 👆
-    
-    item.time = Date.now();
-
-    push(ref(db, `users/${currentUser.uid}/inventory`), item);
-    addLog(`Пользователь ${currentUser.name} открыл кейс и выбил ${item.name}`);
-
-    const caseDisplay = document.getElementById('caseDisplay');
-    caseDisplay.innerHTML = `<span class="skin-${item.rarity}" style="animation: fadeIn 0.5s;">Вам выпало: <br>${item.name}</span>`;
-};
-
-function renderInventory() {
-    const grid = document.getElementById('inventoryGrid');
-    if (!grid) return;
-
-    if (!currentUser || !currentUser.inventory) {
-        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-dim); padding: 40px;">Ваш инвентарь пуст</div>';
-        return;
-    }
-
-    const items = Object.values(currentUser.inventory).sort((a, b) => b.time - a.time);
-    
-    grid.innerHTML = items.map(i => `
-        <div class="inventory-item">
-            <div class="item-icon"><img src="${i.img}" alt="${i.name}"></div>
-            <div class="item-name skin-${i.rarity}">${i.name}</div>
-        </div>
-    `).join('');
-}
-
-
 // --- ЧАТ И РЕАКЦИИ ---
 window.switchChat = (tab) => {
     currentChatTab = tab;
     
-    // Стили вкладок
     document.getElementById('tab-global').style.color = tab === 'global' ? 'var(--primary)' : 'var(--text-dim)';
     document.getElementById('tab-global').style.borderBottom = tab === 'global' ? '2px solid var(--primary)' : 'none';
     
@@ -161,6 +106,8 @@ function renderChat(messagesObj) {
     
     box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => {
         const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const userRole = m.r || 'user';
+        const roleName = userRole.toUpperCase();
         
         let reactHtml = '';
         if (m.reactions) {
@@ -180,7 +127,7 @@ function renderChat(messagesObj) {
         return `
             <div class="msg">
                 <div class="msg-header">
-                    <span class="badge badge-${m.r}">${m.r}</span>
+                    <span class="badge badge-${userRole}">${roleName}</span>
                     <span class="msg-author">${m.u}</span>
                     <span class="msg-time">${timeStr}</span>
                 </div>
@@ -204,8 +151,13 @@ window.toggleReaction = async (msgId, emoji) => {
     const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
     const reactRef = ref(db, `${dbPath}/${msgId}/reactions/${emoji}/${currentUser.name}`);
     const snap = await get(reactRef);
-    if (snap.exists()) remove(reactRef);
-    else set(reactRef, true);
+    if (snap.exists()) {
+        remove(reactRef);
+        addLog(`Пользователь ${currentUser.name} убрал реакцию ${emoji} с сообщения`);
+    } else {
+        set(reactRef, true);
+        addLog(`Пользователь ${currentUser.name} поставил реакцию ${emoji} на сообщение`);
+    }
 };
 
 window.sendChatMessage = () => {
@@ -214,6 +166,8 @@ window.sendChatMessage = () => {
     
     const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
     push(ref(db, dbPath), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
+    
+    addLog(`Пользователь ${currentUser.name} написал в ${currentChatTab === 'global' ? 'глобальный чат' : 'чат котиков'}: ${inp.value}`);
     inp.value = '';
 };
 
@@ -235,12 +189,15 @@ window.handleAuth = async () => {
         const found = allUsers.find(u => u.name === l && u.pass === p);
         if (!found) return notify("Ошибка входа!");
         localStorage.setItem('hurus_session', found.name);
+        await addLog(`Пользователь ${found.name} вошел в систему`);
     } else {
         if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
         await push(ref(db, 'users'), { name: l, pass: p, balance: 0, role: 'user', avatar: '' });
         localStorage.setItem('hurus_session', l);
+        await addLog(`Новый пользователь ${l} зарегистрировался`);
     }
-    location.reload();
+    
+    setTimeout(() => { location.reload(); }, 200);
 };
 
 window.loginWithSteam = () => window.location.href = "https://hurus-backend.onrender.com/auth/steam";
@@ -249,8 +206,6 @@ window.logout = () => { localStorage.removeItem('hurus_session'); location.reloa
 function updateUI() {
     const isAdmin = ['admin', 'moder'].includes(currentUser.role);
     document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
-    const clearChatBtn = document.getElementById('clearChatBtn');
-    if (clearChatBtn) clearChatBtn.style.display = isAdmin ? 'block' : 'none';
     
     document.getElementById('authZone').innerHTML = `
         <div class="profile-info-block">
@@ -263,7 +218,6 @@ function updateUI() {
         </div>
     `;
 
-    // Показываем Чат Котиков только для своих
     const chatTabs = document.getElementById('chatTabs');
     if (catUsers.includes(currentUser.name)) {
         if (!document.getElementById('tab-cats')) {
@@ -300,7 +254,6 @@ window.renderAdmin = () => {
                 </select>
             </td>
             <td>
-                <button class="btn-del" onclick="clearInventory('${u.uid}')" title="Очистить инвентарь" style="color: var(--vip-color); margin-right: 10px;"><i class="fas fa-box-open"></i></button>
                 <button class="btn-del" onclick="deleteUser('${u.uid}')" title="Удалить пользователя"><i class="fas fa-trash"></i></button>
             </td>
         </tr>
@@ -329,27 +282,11 @@ window.changeRole = (uid, newRole) => {
     addLog(`Администратор ${currentUser.name} изменил роль ${u.name} на ${newRole.toUpperCase()}`);
 };
 
-window.clearInventory = (uid) => {
-    const u = allUsers.find(user => user.uid === uid);
-    if (confirm(`Очистить инвентарь ${u.name}?`)) {
-        remove(ref(db, `users/${uid}/inventory`));
-        addLog(`Администратор ${currentUser.name} очистил инвентарь пользователя ${u.name}`);
-        notify("Инвентарь очищен");
-    }
-};
-
 window.deleteUser = (uid) => {
     const u = allUsers.find(user => user.uid === uid);
     if (confirm(`Удалить аккаунт ${u.name}? Это действие нельзя отменить.`)) {
         remove(ref(db, `users/${uid}`));
         addLog(`Администратор ${currentUser.name} УДАЛИЛ аккаунт ${u.name}`);
-    }
-};
-
-window.clearChat = () => {
-    if (confirm("Очистить глобальный чат?")) {
-        set(ref(db, 'messages'), null);
-        addLog(`Администратор ${currentUser.name} очистил глобальный чат`);
     }
 };
 
@@ -363,7 +300,6 @@ window.showSection = (id) => {
     if(activeBtn) activeBtn.classList.add('active');
 
     if (id === 'admin') renderAdmin();
-    if (id === 'inventory') renderInventory();
 };
 
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
