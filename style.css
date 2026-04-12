@@ -350,3 +350,53 @@ emoji-picker {
     margin: 10px 0;
     font-size: 12px;
 }
+/* Стили для ника в чате */
+.msg-author {
+    cursor: pointer; /* Делает ник кликабельным */
+    transition: color 0.2s;
+}
+.msg-author:hover {
+    color: #fff !important;
+    text-decoration: underline;
+}
+
+/* Стили контекстного меню */
+.user-context-menu {
+    position: absolute;
+    background: #1a1a24;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    z-index: 2000;
+    min-width: 160px;
+    overflow: hidden;
+}
+
+.menu-header {
+    padding: 10px;
+    background: var(--primary-grad);
+    font-weight: bold;
+    font-size: 12px;
+    text-align: center;
+}
+
+.menu-body button {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #ccc;
+    padding: 10px 15px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: 0.2s;
+}
+
+.menu-body button:hover {
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+}

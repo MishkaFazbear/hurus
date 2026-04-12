@@ -188,6 +188,9 @@ function renderChatTabs() {
     tabsBox.innerHTML = html;
 }
 
+// Переменная для хранения ника игрока, на которого кликнули
+let selectedUserForMenu = null;
+
 function renderChat(messagesObj, isPm = false, pmPartner = null) {
     const box = document.getElementById('chatMessages');
     const msgs = Object.entries(messagesObj || {}).map(([id, data]) => ({ id, ...data }));
@@ -202,17 +205,12 @@ function renderChat(messagesObj, isPm = false, pmPartner = null) {
         const userRole = isPm ? 'user' : (m.r || 'user');
         const badge = isPm ? '' : `<span class="badge badge-${userRole}">${userRole.toUpperCase()}</span>`;
         
-        let reactions = '';
-        if (!isPm && m.reactions) {
-            reactions = Object.entries(m.reactions).map(([emoji, users]) => {
-                const count = Object.keys(users).length;
-                const active = currentUser && users[currentUser.name] ? 'active' : '';
-                return `<div class="react-item ${active}" onclick="toggleReaction('${m.id}', '${emoji}')">${emoji} <span>${count}</span></div>`;
-            }).join('');
-        }
+        // ВАЖНО: Добавили event в openUserMenu
+        const authorClick = (currentUser && m.u !== currentUser.name) 
+            ? `onclick="openUserMenu('${m.u}', event)"` 
+            : '';
 
         const isMe = currentUser && m.u === currentUser.name;
-        const authorClick = (currentUser && m.u !== currentUser.name) ? `onclick="startPm('${m.u}')"` : '';
 
         return `
             <div class="msg ${isMe ? 'msg-me' : ''}">
@@ -222,12 +220,38 @@ function renderChat(messagesObj, isPm = false, pmPartner = null) {
                     <span class="msg-time">${timeStr}</span>
                 </div>
                 <div class="msg-text">${m.t}</div>
-                <div class="msg-footer"><div class="reactions-container">${reactions}</div></div>
             </div>
         `;
     }).join('');
     box.scrollTop = box.scrollHeight;
 }
+
+// Функция открытия меню
+window.openUserMenu = (userName, event) => {
+    event.stopPropagation(); // Чтобы не срабатывали другие клики
+    selectedUserForMenu = userName;
+    
+    const menu = document.getElementById('userContextMenu');
+    document.getElementById('menuUserName').innerText = userName;
+    
+    menu.style.display = 'block';
+    menu.style.left = event.pageX + 'px';
+    menu.style.top = event.pageY + 'px';
+};
+
+// Функция для кнопки "Написать ЛС" в меню
+window.menuStartPm = () => {
+    if (selectedUserForMenu) {
+        switchChat('pm', selectedUserForMenu);
+        document.getElementById('userContextMenu').style.display = 'none';
+    }
+};
+
+// Закрытие меню при клике в любое другое место
+document.addEventListener('click', () => {
+    const menu = document.getElementById('userContextMenu');
+    if (menu) menu.style.display = 'none';
+});
 
 function renderChatPlaceHolder(text) {
     document.getElementById('chatMessages').innerHTML = `<div class="chat-placeholder">${text}</div>`;
