@@ -20,6 +20,7 @@ let allUsers = [];
 let allLogs = [];
 let authMode = 'login';
 let activeReactMsgId = null; 
+let userSearchQuery = "";
 
 // --- ПЕРЕМЕННЫЕ ДЛЯ ЧАТА ---
 let currentChatTab = 'global';
@@ -34,6 +35,35 @@ if (steamNick) {
     localStorage.setItem('hurus_session', steamNick);
     window.history.replaceState({}, document.title, window.location.pathname);
 }
+
+// --- СИСТЕМА ПРИСУТСТВИЯ (ОНЛАЙН) ---
+function updatePresence() {
+    if (!currentUser) return;
+    const onlineRef = ref(db, `online/${currentUser.uid}`);
+    set(onlineRef, { name: currentUser.name, lastSeen: Date.now() });
+    
+    // Удаляем из онлайна при закрытии или перезагрузке
+    window.addEventListener('beforeunload', () => remove(onlineRef));
+}
+
+onValue(ref(db, 'online'), (snapshot) => {
+    const onlineData = snapshot.val() || {};
+    const now = Date.now();
+    const onlineUsers = [];
+
+    Object.entries(onlineData).forEach(([uid, data]) => {
+        if (now - data.lastSeen < 300000) { // 5 минут таймаут
+            onlineUsers.push(data.name);
+        } else {
+            remove(ref(db, `online/${uid}`));
+        }
+    });
+
+    const countElem = document.getElementById('onlineCount');
+    const nicksElem = document.getElementById('onlineNicknames');
+    if (countElem) countElem.innerText = onlineUsers.length;
+    if (nicksElem) nicksElem.innerText = onlineUsers.length > 0 ? `Сейчас: ${onlineUsers.join(', ')}` : 'Никого нет';
+});
 
 // --- СИНХРОНИЗАЦИЯ С БД ---
 onValue(ref(db, '/'), (snapshot) => {
@@ -53,6 +83,8 @@ onValue(ref(db, '/'), (snapshot) => {
             if (found) {
                 currentUser = found;
                 updateUI();
+                renderInventory();
+                updatePresence();
             }
         }
         
@@ -64,7 +96,7 @@ onValue(ref(db, '/'), (snapshot) => {
 
 // --- СИСТЕМА ЛОГОВ ---
 function addLog(text) {
-    return push(ref(db, 'logs'), { text, time: Date.now() });
+    push(ref(db, 'logs'), { text, time: Date.now() });
 }
 
 function renderLogs() {
@@ -84,17 +116,72 @@ function renderLogs() {
     }).join('');
 }
 
+
+// --- КЕЙСЫ И ИНВЕНТАРЬ ---
+window.openCase = () => {
+    if (!currentUser) return notify("Сначала войдите в аккаунт!");
+    if ((currentUser.balance || 0) < 100) return notify("Недостаточно средств (нужно 100 ₽)!");
+
+    update(ref(db, `users/${currentUser.uid}`), { balance: currentUser.balance - 100 });
+
+    const rand = Math.random();
+    let item = {};
+
+    if (rand < 0.05) { 
+        item = { name: "Твое Легендарное", rarity: "legendary", img: "https://via.placeholder.com/100" };
+    } else if (rand < 0.20) { 
+        item = { name: "Твое Тайное", rarity: "epic", img: "https://via.placeholder.com/100" };
+    } else if (rand < 0.50) { 
+        item = { name: "Твое Засекреченное", rarity: "rare", img: "https://via.placeholder.com/100" };
+    } else { 
+        item = { name: "Твое Армейское", rarity: "common", img: "https://via.placeholder.com/100" };
+    }
+    
+    item.time = Date.now();
+    push(ref(db, `users/${currentUser.uid}/inventory`), item);
+    addLog(`Пользователь ${currentUser.name} открыл кейс и выбил ${item.name}`);
+
+    const caseDisplay = document.getElementById('caseDisplay');
+    caseDisplay.innerHTML = `<span class="skin-${item.rarity}" style="animation: fadeIn 0.5s;">Вам выпало: <br>${item.name}</span>`;
+};
+
+function renderInventory() {
+    const grid = document.getElementById('inventoryGrid');
+    if (!grid) return;
+
+    if (!currentUser || !currentUser.inventory) {
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-dim); padding: 40px;">Ваш инвентарь пуст</div>';
+        return;
+    }
+
+    const items = Object.values(currentUser.inventory).sort((a, b) => b.time - a.time);
+    grid.innerHTML = items.map(i => `
+        <div class="inventory-item">
+            <div class="item-icon"><img src="${i.img}" alt="${i.name}"></div>
+            <div class="item-name skin-${i.rarity}">${i.name}</div>
+        </div>
+    `).join('');
+}
+
+
 // --- ЧАТ И РЕАКЦИИ ---
 window.switchChat = (tab) => {
     currentChatTab = tab;
     
-    document.getElementById('tab-global').style.color = tab === 'global' ? 'var(--primary)' : 'var(--text-dim)';
-    document.getElementById('tab-global').style.borderBottom = tab === 'global' ? '2px solid var(--primary)' : 'none';
+    // Сброс всех стилей кнопок
+    document.querySelectorAll('.chat-header button').forEach(btn => {
+        if(btn.id !== 'clearChatBtn') {
+            btn.classList.remove('active');
+            btn.style.color = 'var(--text-dim)';
+            btn.style.borderBottom = '2px solid transparent';
+        }
+    });
     
-    const catTab = document.getElementById('tab-cats');
-    if (catTab) {
-        catTab.style.color = tab === 'cats' ? '#ff66b2' : 'var(--text-dim)';
-        catTab.style.borderBottom = tab === 'cats' ? '2px solid #ff66b2' : 'none';
+    const activeTab = document.getElementById(`tab-${tab}`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+        activeTab.style.color = tab === 'cats' ? '#ff66b2' : 'var(--primary)';
+        activeTab.style.borderBottom = `2px solid ${tab === 'cats' ? '#ff66b2' : 'var(--primary)'}`;
     }
 
     renderChat(tab === 'global' ? globalMessages : catMessages);
@@ -102,23 +189,21 @@ window.switchChat = (tab) => {
 
 function renderChat(messagesObj) {
     const box = document.getElementById('chatMessages');
+    if (!box) return;
     const msgs = Object.entries(messagesObj || {}).map(([id, data]) => ({ id, ...data }));
     
     box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => {
         const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const userRole = m.r || 'user';
-        const roleName = userRole.toUpperCase();
         
         let reactHtml = '';
         if (m.reactions) {
             reactHtml = Object.entries(m.reactions).map(([emoji, users]) => {
                 const userList = Object.keys(users);
-                const count = userList.length;
                 const hasMyReact = currentUser && users[currentUser.name] ? 'active' : '';
                 return `
                     <div class="react-item ${hasMyReact}" onclick="toggleReaction('${m.id}', '${emoji}')" title="${userList.join(', ')}">
                         <span class="react-emoji">${emoji}</span>
-                        <span class="react-count">${count}</span>
+                        <span class="react-count">${userList.length}</span>
                     </div>
                 `;
             }).join('');
@@ -127,7 +212,7 @@ function renderChat(messagesObj) {
         return `
             <div class="msg">
                 <div class="msg-header">
-                    <span class="badge badge-${userRole}">${roleName}</span>
+                    <span class="badge badge-${m.r}">${m.r}</span>
                     <span class="msg-author">${m.u}</span>
                     <span class="msg-time">${timeStr}</span>
                 </div>
@@ -151,13 +236,8 @@ window.toggleReaction = async (msgId, emoji) => {
     const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
     const reactRef = ref(db, `${dbPath}/${msgId}/reactions/${emoji}/${currentUser.name}`);
     const snap = await get(reactRef);
-    if (snap.exists()) {
-        remove(reactRef);
-        addLog(`Пользователь ${currentUser.name} убрал реакцию ${emoji} с сообщения`);
-    } else {
-        set(reactRef, true);
-        addLog(`Пользователь ${currentUser.name} поставил реакцию ${emoji} на сообщение`);
-    }
+    if (snap.exists()) remove(reactRef);
+    else set(reactRef, true);
 };
 
 window.sendChatMessage = () => {
@@ -166,8 +246,6 @@ window.sendChatMessage = () => {
     
     const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
     push(ref(db, dbPath), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
-    
-    addLog(`Пользователь ${currentUser.name} написал в ${currentChatTab === 'global' ? 'глобальный чат' : 'чат котиков'}: ${inp.value}`);
     inp.value = '';
 };
 
@@ -189,15 +267,12 @@ window.handleAuth = async () => {
         const found = allUsers.find(u => u.name === l && u.pass === p);
         if (!found) return notify("Ошибка входа!");
         localStorage.setItem('hurus_session', found.name);
-        await addLog(`Пользователь ${found.name} вошел в систему`);
     } else {
         if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
         await push(ref(db, 'users'), { name: l, pass: p, balance: 0, role: 'user', avatar: '' });
         localStorage.setItem('hurus_session', l);
-        await addLog(`Новый пользователь ${l} зарегистрировался`);
     }
-    
-    setTimeout(() => { location.reload(); }, 200);
+    location.reload();
 };
 
 window.loginWithSteam = () => window.location.href = "https://hurus-backend.onrender.com/auth/steam";
@@ -206,6 +281,8 @@ window.logout = () => { localStorage.removeItem('hurus_session'); location.reloa
 function updateUI() {
     const isAdmin = ['admin', 'moder'].includes(currentUser.role);
     document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
+    const clearChatBtn = document.getElementById('clearChatBtn');
+    if (clearChatBtn) clearChatBtn.style.display = isAdmin ? 'block' : 'none';
     
     document.getElementById('authZone').innerHTML = `
         <div class="profile-info-block">
@@ -221,12 +298,12 @@ function updateUI() {
     const chatTabs = document.getElementById('chatTabs');
     if (catUsers.includes(currentUser.name)) {
         if (!document.getElementById('tab-cats')) {
-            chatTabs.innerHTML += `<button id="tab-cats" onclick="switchChat('cats')" style="background: none; border: none; color: var(--text-dim); cursor: pointer; font-weight: 800; padding: 5px; margin-left: 10px;">Чат Котиков <3</button>`;
+            const btn = document.createElement('button');
+            btn.id = 'tab-cats';
+            btn.innerText = 'Чат Котиков <3';
+            btn.onclick = () => switchChat('cats');
+            chatTabs.insertBefore(btn, clearChatBtn);
         }
-    } else {
-        const catTab = document.getElementById('tab-cats');
-        if (catTab) catTab.remove();
-        if (currentChatTab === 'cats') switchChat('global');
     }
 }
 
@@ -235,7 +312,11 @@ window.renderAdmin = () => {
     const list = document.getElementById('adminUserList');
     if (!list) return;
     
-    list.innerHTML = allUsers.map(u => `
+    const filteredUsers = allUsers.filter(u => 
+        u.name.toLowerCase().includes(userSearchQuery.toLowerCase())
+    );
+
+    list.innerHTML = filteredUsers.map(u => `
         <tr>
             <td>${u.name}</td>
             <td style="color: var(--success); font-weight: bold;">${u.balance || 0} ₽</td>
@@ -254,6 +335,7 @@ window.renderAdmin = () => {
                 </select>
             </td>
             <td>
+                <button class="btn-del" onclick="clearInventory('${u.uid}')" title="Очистить инвентарь" style="color: var(--vip-color); margin-right: 10px;"><i class="fas fa-box-open"></i></button>
                 <button class="btn-del" onclick="deleteUser('${u.uid}')" title="Удалить пользователя"><i class="fas fa-trash"></i></button>
             </td>
         </tr>
@@ -282,11 +364,27 @@ window.changeRole = (uid, newRole) => {
     addLog(`Администратор ${currentUser.name} изменил роль ${u.name} на ${newRole.toUpperCase()}`);
 };
 
+window.clearInventory = (uid) => {
+    const u = allUsers.find(user => user.uid === uid);
+    if (confirm(`Очистить инвентарь ${u.name}?`)) {
+        remove(ref(db, `users/${uid}/inventory`));
+        addLog(`Администратор ${currentUser.name} очистил инвентарь пользователя ${u.name}`);
+        notify("Инвентарь очищен");
+    }
+};
+
 window.deleteUser = (uid) => {
     const u = allUsers.find(user => user.uid === uid);
     if (confirm(`Удалить аккаунт ${u.name}? Это действие нельзя отменить.`)) {
         remove(ref(db, `users/${uid}`));
         addLog(`Администратор ${currentUser.name} УДАЛИЛ аккаунт ${u.name}`);
+    }
+};
+
+window.clearChat = () => {
+    if (confirm("Очистить глобальный чат?")) {
+        set(ref(db, 'messages'), null);
+        addLog(`Администратор ${currentUser.name} очистил глобальный чат`);
     }
 };
 
@@ -300,6 +398,7 @@ window.showSection = (id) => {
     if(activeBtn) activeBtn.classList.add('active');
 
     if (id === 'admin') renderAdmin();
+    if (id === 'inventory') renderInventory();
 };
 
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -313,6 +412,15 @@ window.notify = (t) => {
 document.addEventListener('DOMContentLoaded', () => {
     const globalPicker = document.getElementById('global-emoji-picker');
     const pickerElement = document.querySelector('emoji-picker');
+    
+    // Слушатель поиска
+    document.body.addEventListener('input', (e) => {
+        if (e.target.id === 'userSearch') {
+            userSearchQuery = e.target.value;
+            renderAdmin();
+        }
+    });
+
     window.openEmojiPicker = (msgId, event) => {
         event.stopPropagation();
         if (!currentUser) return notify("Сначала войдите!");
