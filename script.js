@@ -18,9 +18,7 @@ const db = getDatabase(app);
 let currentUser = null;
 let allUsers = [];
 let authMode = 'login';
-
-// Список доступных эмодзи
-const EMOJI_LIST = ['🔥', '❤️', '👍', '😂', '🤡', '😮', '😢'];
+let activeReactMsgId = null; // Для отслеживания, к какому сообщению открыт пикер
 
 // --- СИНХРОНИЗАЦИЯ ---
 onValue(ref(db, '/'), (snapshot) => {
@@ -80,12 +78,9 @@ function renderChat(messagesObj) {
                 <div class="msg-footer">
                     <div class="reactions-container">
                         ${reactHtml}
-                        <div class="add-react-dropdown">
-                            <button class="btn-add-emoji"><i class="fas fa-plus"></i></button>
-                            <div class="emoji-menu">
-                                ${EMOJI_LIST.map(e => `<span onclick="toggleReaction('${m.id}', '${e}')">${e}</span>`).join('')}
-                            </div>
-                        </div>
+                        <button class="btn-add-emoji" onclick="openEmojiPicker('${m.id}', event)">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -168,3 +163,47 @@ window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
 };
+
+// --- ЛОГИКА ПИКЕРА ЭМОДЗИ ---
+document.addEventListener('DOMContentLoaded', () => {
+    const globalPicker = document.getElementById('global-emoji-picker');
+    const pickerElement = document.querySelector('emoji-picker');
+
+    window.openEmojiPicker = (msgId, event) => {
+        event.stopPropagation(); 
+        if (!currentUser) return notify("Сначала войдите в аккаунт!");
+        
+        activeReactMsgId = msgId;
+        globalPicker.style.display = 'block';
+        
+        const btnRect = event.currentTarget.getBoundingClientRect();
+        
+        let topPos = btnRect.bottom + window.scrollY + 5;
+        let leftPos = btnRect.left + window.scrollX;
+        
+        if (topPos + 350 > window.innerHeight + window.scrollY) {
+            topPos = btnRect.top + window.scrollY - 355; 
+        }
+        
+        if (leftPos + 320 > window.innerWidth) {
+            leftPos = window.innerWidth - 330;
+        }
+
+        globalPicker.style.top = topPos + 'px';
+        globalPicker.style.left = leftPos + 'px';
+    };
+
+    pickerElement.addEventListener('emoji-click', event => {
+        if (activeReactMsgId) {
+            const emoji = event.detail.unicode; 
+            toggleReaction(activeReactMsgId, emoji);
+            globalPicker.style.display = 'none'; 
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (globalPicker.style.display === 'block' && !globalPicker.contains(e.target)) {
+            globalPicker.style.display = 'none';
+        }
+    });
+});
