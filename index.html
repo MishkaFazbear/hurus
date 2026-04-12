@@ -18,8 +18,8 @@
             <button onclick="showSection('home')" id="nav-home" class="active"><i class="fas fa-server"></i> СЕРВЕРА</button>
             <button onclick="showSection('cases')" id="nav-cases"><i class="fas fa-box-open"></i> КЕЙСЫ</button>
             <button onclick="showSection('inventory')" id="nav-inventory"><i class="fas fa-backpack"></i> ИНВЕНТАРЬ</button>
-            <button onclick="showSection('shop')" id="nav-shop"><i class="fas fa-shopping-cart"></i> МАГАЗИН</button>
-            <button onclick="showSection('admin')" id="adminLink" style="display: none;"><i class="fas fa-user-shield"></i> STAFF</button>
+            <button onclick="showSection('shop')" id="nav-shop"><i class="fas fa-gem"></i> МАГАЗИН</button>
+            <button onclick="showSection('admin')" id="adminLink" style="display: none;"><i class="fas fa-shield-halved"></i> STAFF</button>
         </nav>
         <div id="authZone">
             <button class="btn btn-primary" onclick="openModal('authModal')">ВОЙТИ</button>
@@ -51,59 +51,70 @@
                         <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
                     </div>
                 </div>
-                <div class="server-card">
-                    <img src="https://static.fandomspot.com/images/11/10188/00-featured-overpass-map-csgo.jpg" alt="Overpass">
-                    <div class="server-info">
-                        <h3>OVERPASS RETAKE</h3>
-                        <div class="progress-bg"><div class="progress-bar" style="width: 65%"></div></div>
-                        <p>13 / 20 игроков</p>
-                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
-                </div>
-                <div class="server-card">
-                    <img src="https://i.ytimg.com/vi/q_7I9T_p8mI/maxresdefault.jpg" alt="Nuke">
-                    <div class="server-info">
-                        <h3>NUKE 24/7</h3>
-                        <div class="progress-bg"><div class="progress-bar" style="width: 20%"></div></div>
-                        <p>4 / 20 игроков</p>
-                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
-                </div>
             </div>
         </div>
 
         <div id="cases" class="page-section">
-            <h1 class="section-title">Испытай удачу</h1>
+            <h1 class="section-title">Магазин кейсов</h1>
             <div class="case-card card">
                 <div class="case-visual">
-                    <img src="https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXU5A1PIYQNkHpOSV-fRPasw8rsUFJ5KBFZv668FFYuh6eZJnMX79mzkY60kfP1au7ulToBuMcgj-jE9tSijgeyr0o6Ym_6I9Scc1U9YV_Q-VmggbC43_r4/360fx360f" alt="Revolution Case" style="width:220px">
+                    <img src="https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXU5A1PIYQNkHpOSV-fRPasw8rsUFJ5KBFZv668FFYuh6eZJnMX79mzkY60kfP1au7ulToBuMcgj-jE9tSijgeyr0o6Ym_6I9Scc1U9YV_Q-VmggbC43_r4/360fx360f" alt="Case" style="width:200px">
                     <div class="case-details">
                         <h2>REVOLUTION CASE</h2>
-                        <p>Предметы: Тайное, Засекреченное, Ножи</p>
-                        <div id="caseDisplay" class="case-res">Нажми открыть!</div>
-                        <button id="openBtn" class="btn btn-primary w-100 open-btn" onclick="openCase()">ОТКРЫТЬ ЗА 100 ₽</button>
+                        <p>Шанс выбить редкий нож — 5%</p>
+                        <div id="caseDisplay" class="case-res">Удачи!</div>
+                        <button id="openBtn" class="btn btn-primary w-100" onclick="openCase()">ОТКРЫТЬ (100 ₽)</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <div id="inventory" class="page-section">
-            <h1 class="section-title">Мои скины</h1>
-            <div id="inventoryGrid" class="inventory-grid">
+            <h1 class="section-title">Инвентарь</h1>
+            <div id="inventoryGrid" class="inventory-grid"></div>
+        </div>
+
+        <div id="shop" class="page-section">
+            <h1 class="section-title">Привилегии</h1>
+            <div class="shop-grid">
+                <div class="shop-item vip">
+                    <div class="shop-badge">SILVER</div>
+                    <div class="shop-icon"><i class="fas fa-crown"></i></div>
+                    <h3>VIP STATUS</h3>
+                    <div class="shop-price">199 <span>₽/мес</span></div>
+                    <ul class="shop-features">
+                        <li><i class="fas fa-check"></i> Тэг [VIP] в чате</li>
+                        <li><i class="fas fa-check"></i> Доступ к скинам !ws</li>
+                        <li><i class="fas fa-check"></i> Резервный слот</li>
+                    </ul>
+                    <button class="btn-buy" onclick="notify('В разработке...')">КУПИТЬ</button>
                 </div>
+
+                <div class="shop-item premium">
+                    <div class="shop-badge">GOLD</div>
+                    <div class="shop-icon"><i class="fas fa-star"></i></div>
+                    <h3>PREMIUM</h3>
+                    <div class="shop-price">499 <span>₽/мес</span></div>
+                    <ul class="shop-features">
+                        <li><i class="fas fa-check"></i> Тэг [PREMIUM]</li>
+                        <li><i class="fas fa-check"></i> Модели агентов</li>
+                        <li><i class="fas fa-check"></i> Lite Админка</li>
+                    </ul>
+                    <button class="btn-buy" onclick="notify('В разработке...')">КУПИТЬ</button>
+                </div>
+            </div>
         </div>
 
         <div id="admin" class="page-section">
-            <h1 class="section-title" style="color:var(--danger)">Панель управления</h1>
-            <div class="card" style="overflow-x: auto;">
+            <h1 class="section-title">Управление персоналом</h1>
+            <div class="card">
                 <table class="staff-table">
                     <thead>
                         <tr>
-                            <th>Пользователь</th>
+                            <th>Ник</th>
                             <th>Баланс</th>
-                            <th>Действие</th>
                             <th>Роль</th>
-                            <th>Управление</th>
+                            <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody id="adminUserList"></tbody>
@@ -111,42 +122,19 @@
             </div>
         </div>
 
-        <div id="shop" class="page-section">
-            <h1 class="section-title">Привилегии</h1>
-            <div class="shop-grid">
-                <div class="shop-card vip">
-                    <div class="role-icon">VIP</div>
-                    <h3>VIP статус</h3>
-                    <ul class="features-list">
-                        <li><i class="fas fa-check"></i> Префикс [VIP]</li>
-                        <li><i class="fas fa-check"></i> Доступ к !ws и !knife</li>
-                    </ul>
-                    <div class="price">199 ₽</div>
-                    <button class="btn btn-shop">Купить</button>
-                </div>
-                <div class="shop-card premium">
-                    <div class="role-icon">MVP</div>
-                    <h3>PREMIUM статус</h3>
-                    <ul class="features-list">
-                        <li><i class="fas fa-check"></i> Все права VIP</li>
-                        <li><i class="fas fa-check"></i> Админ-меню ( lite )</li>
-                    </ul>
-                    <div class="price">499 ₽</div>
-                    <button class="btn btn-shop premium-btn">Купить</button>
-                </div>
-            </div>
-        </div>
     </section>
 
     <aside class="sidebar">
         <div class="chat-wrapper">
             <div class="chat-header">
-                <span>Глобальный чат</span>
-                <button id="clearChatBtn" onclick="clearChat()" style="display: none;"><i class="fas fa-trash"></i></button>
+                <span>ОБЩИЙ ЧАТ</span>
+                <button id="clearChatBtn" class="chat-clear-icon" onclick="clearChat()" style="display:none;" title="Очистить чат">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
             </div>
             <div id="chatMessages" class="chat-body"></div>
             <div class="chat-footer">
-                <input type="text" id="chatInput" placeholder="Сообщение..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+                <input type="text" id="chatInput" placeholder="Введите текст..." onkeydown="if(event.key==='Enter') sendChatMessage()">
                 <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
@@ -160,9 +148,9 @@
             <button id="tab-reg" onclick="setAuthMode('reg')">РЕГИСТРАЦИЯ</button>
         </div>
         <div class="modal-form">
-            <div class="input-field"><i class="fas fa-user"></i><input type="text" id="authLogin" placeholder="Никнейм"></div>
+            <div class="input-field"><i class="fas fa-user"></i><input type="text" id="authLogin" placeholder="Логин"></div>
             <div class="input-field"><i class="fas fa-lock"></i><input type="password" id="authPass" placeholder="Пароль"></div>
-            <button class="btn btn-primary w-100" onclick="handleAuth()">ВОЙТИ</button>
+            <button class="btn btn-primary w-100" onclick="handleAuth()">ПОДТВЕРДИТЬ</button>
         </div>
     </div>
 </div>

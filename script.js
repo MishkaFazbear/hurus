@@ -19,28 +19,54 @@ let currentUser = null;
 let allUsers = [];
 let authMode = 'login';
 
-// СИНХРОНИЗАЦИЯ
+// ГЛАВНЫЙ СЛУШАТЕЛЬ
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
         allUsers = data.users ? Object.values(data.users) : [];
         renderChat(data.messages ? Object.values(data.messages) : []);
         
-        // Авто-логин из localStorage или обновление текущего юзера
-        const savedNick = localStorage.getItem('hurus_session');
-        if (savedNick && !currentUser) {
-            currentUser = allUsers.find(u => u.name === savedNick);
-        } else if (currentUser) {
-            currentUser = allUsers.find(u => u.name === currentUser.name);
+        // Восстановление сессии
+        const saved = localStorage.getItem('hurus_session');
+        if (saved) {
+            currentUser = allUsers.find(u => u.name === saved);
+            if (currentUser) {
+                updateUI(); // Обновляем интерфейс (включая админку)
+                updateInventory();
+            }
         }
 
-        if (currentUser) {
-            updateUI();
-            updateInventory();
-        }
         if (document.getElementById('admin').classList.contains('active')) renderAdmin();
     }
 });
+
+// ОБНОВЛЕНИЕ ИНТЕРФЕЙСА И ПРАВ
+function updateUI() {
+    if (!currentUser) return;
+    
+    // Профиль
+    document.getElementById('authZone').innerHTML = `
+        <div class="profile-block">
+            <div class="p-info">
+                <span class="p-name">${currentUser.name}</span>
+                <span class="p-money">${currentUser.balance} ₽</span>
+            </div>
+            <button class="logout-link" onclick="logout()">ВЫЙТИ</button>
+        </div>
+    `;
+
+    // Права STAFF (ВИДИМОСТЬ КНОПОК)
+    const isAdmin = currentUser.role === 'admin';
+    const isModer = currentUser.role === 'moder';
+
+    if (isAdmin || isModer) {
+        document.getElementById('adminLink').style.display = 'block';
+        document.getElementById('clearChatBtn').style.display = 'flex';
+    } else {
+        document.getElementById('adminLink').style.display = 'none';
+        document.getElementById('clearChatBtn').style.display = 'none';
+    }
+}
 
 // АВТОРИЗАЦИЯ
 window.handleAuth = async () => {
@@ -52,40 +78,19 @@ window.handleAuth = async () => {
         if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
         const role = ['мишутка фазбер', 'sharizmound'].includes(l.toLowerCase()) ? 'admin' : 'user';
         await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 100, role: role, inventory: [] });
-        notify("Готово! +100₽ бонусом"); 
+        notify("Успешно! Войди в аккаунт");
         setAuthMode('login');
     } else {
         const found = allUsers.find(u => u.name === l && u.pass === p);
-        if (!found) return notify("Неверный вход!");
-        currentUser = found; 
-        localStorage.setItem('hurus_session', currentUser.name); // Сохраняем сессию
-        updateUI(); 
+        if (!found) return notify("Ошибка входа!");
+        currentUser = found;
+        localStorage.setItem('hurus_session', currentUser.name);
+        updateUI();
         closeModal();
-        notify("Добро пожаловать!");
     }
 };
 
-window.logout = () => {
-    localStorage.removeItem('hurus_session'); // Удаляем сессию
-    location.reload(); 
-};
-
-function updateUI() {
-    if (!currentUser) return;
-    document.getElementById('authZone').innerHTML = `
-        <div class="profile-info-block">
-            <div class="profile-text-data">
-                <div class="profile-nick">${currentUser.name}</div>
-                <div class="profile-balance">${currentUser.balance} ₽</div>
-            </div>
-            <button class="btn-logout" onclick="logout()">ВЫЙТИ</button>
-        </div>
-    `;
-    if (['admin', 'moder'].includes(currentUser.role)) {
-        document.getElementById('adminLink').style.display = 'block';
-        document.getElementById('clearChatBtn').style.display = 'block';
-    }
-}
+window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
 
 // ЧАТ
 window.sendChatMessage = () => {
@@ -96,7 +101,7 @@ window.sendChatMessage = () => {
 };
 
 window.clearChat = () => {
-    if (confirm("Очистить чат для всех?")) set(ref(db, 'messages'), null);
+    if (confirm("Удалить всю историю чата?")) set(ref(db, 'messages'), null);
 };
 
 function renderChat(msgs) {
@@ -110,23 +115,21 @@ function renderChat(msgs) {
 // КЕЙСЫ
 const skins = [
     {n: "AWP | Dragon Lore", r: "legendary", img: "🐲"},
-    {n: "Karambit | Doppler", r: "legendary", img: "🔪"},
+    {n: "M9 Bayonet | Doppler", r: "legendary", img: "🔪"},
     {n: "AK-47 | Neon Rider", r: "epic", img: "🔫"},
-    {n: "M4A4 | Howl", r: "legendary", img: "🐺"},
-    {n: "Glock-18 | Fade", r: "rare", img: "🌈"},
-    {n: "P250 | Sand Dune", r: "common", img: "🏜️"}
+    {n: "Glock-18 | Fade", r: "rare", img: "🌈"}
 ];
 
 window.openCase = () => {
     if (!currentUser) return openModal('authModal');
-    if (currentUser.balance < 100) return notify("Недостаточно баланса!");
+    if (currentUser.balance < 100) return notify("Нужно 100 ₽");
 
     const btn = document.getElementById('openBtn');
     btn.disabled = true;
-    document.getElementById('caseDisplay').innerText = "Открытие...";
+    document.getElementById('caseDisplay').innerText = "Крутим...";
 
     setTimeout(() => {
-        const win = skins[Math.floor(Math.random() * skins.length)];
+        const win = skins[Math.floor(Math.random()*skins.length)];
         const currentInv = currentUser.inventory ? [...Object.values(currentUser.inventory)] : [];
         currentInv.push({ ...win, id: Date.now() });
 
@@ -134,70 +137,59 @@ window.openCase = () => {
             balance: currentUser.balance - 100,
             inventory: currentInv
         });
-
         document.getElementById('caseDisplay').innerHTML = `<span class="skin-${win.r}">${win.n}</span>`;
-        notify("Выпало: " + win.n);
         btn.disabled = false;
-    }, 1200);
+    }, 1000);
 };
 
 function updateInventory() {
     const grid = document.getElementById('inventoryGrid');
-    if (!currentUser || !currentUser.inventory) {
-        grid.innerHTML = '<p style="color:var(--text-dim)">Тут пока пусто...</p>';
-        return;
-    }
-    const items = Object.values(currentUser.inventory);
-    grid.innerHTML = items.map(item => `
-        <div class="inventory-item skin-${item.r}">
-            <div class="item-icon">${item.img}</div>
-            <div class="item-name">${item.n}</div>
+    if (!currentUser || !currentUser.inventory) return grid.innerHTML = 'Пусто';
+    grid.innerHTML = Object.values(currentUser.inventory).map(i => `
+        <div class="inventory-item skin-${i.r}">
+            <div class="item-icon">${i.img}</div>
+            <div class="item-name">${i.n}</div>
         </div>
     `).join('');
 }
 
-// STAFF
+// STAFF ПАНЕЛЬ (ПРАВА)
 function renderAdmin() {
     const list = document.getElementById('adminUserList');
+    const isAdmin = currentUser.role === 'admin';
+
     list.innerHTML = allUsers.map(u => `
         <tr>
             <td><b>${u.name}</b></td>
             <td>${u.balance} ₽</td>
-            <td>
-                <input type="number" id="sum-${u.name}" placeholder="Сумма" style="width:70px; background:#000; color:#fff; border:1px solid var(--border); padding:4px;">
-                <button onclick="giveBal('${u.name}')" class="btn-ok">+</button>
-            </td>
             <td><span class="badge badge-${u.role}">${u.role}</span></td>
             <td>
-                <button onclick="removeUser('${u.name}')" class="btn-del" title="Удалить юзера"><i class="fas fa-trash"></i></button>
-                <select onchange="changeRole('${u.name}', this.value)" style="background:#000; color:#fff; border:1px solid var(--border); padding:4px;">
-                    <option value="">Роль...</option>
-                    <option value="user">User</option>
-                    <option value="vip">VIP</option>
-                    <option value="moder">Moder</option>
-                    <option value="admin">Admin</option>
-                </select>
+                ${isAdmin ? `
+                    <button class="btn-sm btn-danger" onclick="removeUser('${u.name}')"><i class="fas fa-user-times"></i></button>
+                    <input type="number" id="give-${u.name}" placeholder="₽" style="width:50px; background:#000; border:1px solid #333; color:#fff;">
+                    <button class="btn-sm btn-success" onclick="giveBal('${u.name}')">+</button>
+                    <select onchange="changeRole('${u.name}', this.value)" style="background:#000; color:#fff; font-size:10px;">
+                        <option value="">Роль</option>
+                        <option value="user">User</option>
+                        <option value="vip">VIP</option>
+                        <option value="moder">Moder</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                ` : `<span style="color:gray; font-size:11px;">Нет доступа</span>`}
             </td>
         </tr>
     `).join('');
 }
 
 window.giveBal = (name) => {
-    const val = parseInt(document.getElementById('sum-'+name).value);
+    const val = parseInt(document.getElementById('give-'+name).value);
     const u = allUsers.find(x => x.name === name);
     if (!isNaN(val)) update(ref(db, 'users/'+name), { balance: (u.balance || 0) + val });
 };
+window.changeRole = (name, role) => { if(role) update(ref(db, 'users/'+name), { role: role }); };
+window.removeUser = (name) => { if(confirm(`Удалить ${name}?`)) remove(ref(db, 'users/'+name)); };
 
-window.changeRole = (name, role) => {
-    if (role) update(ref(db, 'users/'+name), { role: role });
-};
-
-window.removeUser = (name) => {
-    if (name === currentUser.name) return notify("Себя нельзя!");
-    if (confirm(`Удалить ${name}?`)) remove(ref(db, 'users/' + name));
-};
-
-// ОБЩЕЕ
+// НАВИГАЦИЯ
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
