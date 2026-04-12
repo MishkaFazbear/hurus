@@ -17,80 +17,88 @@ const db = getDatabase(app);
 
 let currentUser = null;
 let allUsers = [];
+let authMode = 'login';
 
+// СИНХРОНИЗАЦИЯ С Firebase
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
         allUsers = data.users ? Object.values(data.users) : [];
         renderChat(data.messages ? Object.values(data.messages) : []);
         if (currentUser) {
-            const fresh = allUsers.find(u => u.name === currentUser.name);
-            if (fresh) { currentUser = fresh; updateHeader(); }
+            currentUser = allUsers.find(u => u.name === currentUser.name) || currentUser;
+            updateUI();
         }
         if (document.getElementById('admin').classList.contains('active')) renderAdmin();
     }
 });
 
-// ВЫХОД ИЗ АККАУНТА
-window.logout = () => {
-    currentUser = null;
-    document.getElementById('adminLink').style.display = 'none';
-    document.getElementById('authZone').innerHTML = `<button class="btn btn-primary" onclick="openModal('authModal')">ВОЙТИ</button>`;
-    showSection('home');
-    notify("Вы вышли из системы");
-};
-
-// ОБНОВЛЕНИЕ ШАПКИ
-function updateHeader() {
-    document.getElementById('authZone').innerHTML = `
-        <div style="text-align:right">
-            <div style="font-weight:800; color:#fff; font-size:14px;">${currentUser.name}</div>
-            <div style="font-size:12px; color:var(--success); font-weight:700;">${currentUser.balance} ₽</div>
-            <button class="btn-logout" onclick="logout()">ВЫЙТИ</button>
-        </div>
-    `;
-}
-
 // АВТОРИЗАЦИЯ
 window.handleAuth = async () => {
     const l = document.getElementById('authLogin').value.trim();
     const p = document.getElementById('authPass').value.trim();
-    if(!l || !p) return notify("Заполни поля!");
-    
-    const isReg = document.getElementById('tab-reg').classList.contains('active');
-    
-    if (isReg) {
-        if (allUsers.some(u => u.name === l)) return notify("Ник уже занят!");
-        await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 0, role: 'user' });
-        notify("Регистрация успешна!");
-        setAuthMode('login');
+    if (!l || !p) return notify("Заполните поля!");
+
+    if (authMode === 'reg') {
+        if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
+        const role = ['мишутка фазбер', 'sharizmound'].includes(l.toLowerCase()) ? 'admin' : 'user';
+        await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 0, role: role });
+        notify("Успешно!"); setAuthMode('login');
     } else {
-        const u = allUsers.find(u => u.name === l && u.pass === p);
-        if (!u) return notify("Неверные данные!");
-        currentUser = u;
-        closeModal();
-        updateHeader();
-        if (u.role === 'admin' || u.role === 'moder') document.getElementById('adminLink').style.display = 'block';
-        notify("Добро пожаловать!");
+        const found = allUsers.find(u => u.name === l && u.pass === p);
+        if (!found) return notify("Ошибка!");
+        currentUser = found; updateUI(); closeModal();
     }
 };
+
+// 🔴 ИСПРАВЛЕНО ОБНОВЛЕНИЕ UI ДЛЯ ВЫРАВНИВАНИЯ 🔴
+function updateUI() {
+    if (!currentUser) return;
+    document.getElementById('authZone').innerHTML = `
+        <div class="profile-info-block">
+            <div class="profile-text-data">
+                <div class="profile-nick">${currentUser.name}</div>
+                <div class="profile-balance">${currentUser.balance} ₽</div>
+            </div>
+            <button class="btn-logout" onclick="logout()">ВЫЙТИ</button>
+        </div>
+    `;
+    if (currentUser.role === 'admin' || currentUser.role === 'moder') document.getElementById('adminLink').style.display = 'block';
+}
+
+window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
+
+// ЧАТ
+window.sendChatMessage = () => {
+    const inp = document.getElementById('chatInput');
+    if (!currentUser || !inp.value.trim()) return;
+    push(ref(db, 'messages'), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
+    inp.value = '';
+};
+
+function renderChat(msgs) {
+    const box = document.getElementById('chatMessages');
+    box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => `
+        <div style="margin-bottom:5px"><span class="badge badge-${m.r}">${m.r}</span> <b>${m.u}:</b> ${m.t}</div>
+    `).join('');
+    box.scrollTop = box.scrollHeight;
+}
 
 // STAFF ПАНЕЛЬ
 function renderAdmin() {
     const list = document.getElementById('adminUserList');
     list.innerHTML = allUsers.map(u => `
         <tr>
-            <td style="font-weight:bold">${u.name}</td>
+            <td><b>${u.name}</b></td>
+            <td>${u.balance} ₽</td>
             <td>
-                <div style="display:flex; gap:5px">
-                    <input type="number" id="amt-${u.name}" placeholder="${u.balance}">
-                    <button class="btn-ok" onclick="giveBalDirect('${u.name}')">ОК</button>
-                </div>
+                <input type="number" id="sum-${u.name}" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); padding:5px;">
+                <button onclick="giveBal('${u.name}')" class="btn-ok">OK</button>
             </td>
             <td><span class="badge badge-${u.role}">${u.role}</span></td>
             <td>
-                <select onchange="saveRoleDirect('${u.name}', this.value)">
-                    <option value="" disabled selected>Изменить...</option>
+                <select onchange="changeRole('${u.name}', this.value)" style="background:#000; color:#fff; border:1px solid var(--border); padding:5px;">
+                    <option value="">Сменить...</option>
                     <option value="user">User</option>
                     <option value="vip">VIP</option>
                     <option value="premium">MVP</option>
@@ -102,65 +110,52 @@ function renderAdmin() {
     `).join('');
 }
 
-window.giveBalDirect = (name) => {
-    const amt = document.getElementById(`amt-${name}`).value;
-    const user = allUsers.find(u => u.name === name);
-    if (amt) {
-        update(ref(db, 'users/'+name), { balance: user.balance + parseInt(amt) });
-        notify("Баланс изменен");
-    }
+window.giveBal = (name) => {
+    const val = parseInt(document.getElementById('sum-'+name).value);
+    const u = allUsers.find(x => x.name === name);
+    if (!isNaN(val)) update(ref(db, 'users/'+name), { balance: (u.balance || 0) + val });
 };
 
-window.saveRoleDirect = (name, newRole) => {
-    update(ref(db, 'users/'+name), { role: newRole });
-    notify(`Роль ${name} теперь ${newRole}`);
+window.changeRole = (name, role) => {
+    if (role) update(ref(db, 'users/'+name), { role: role });
 };
 
-// ЧАТ
-window.sendChatMessage = () => {
-    const inp = document.getElementById('chatInput');
-    if (!currentUser) return openModal('authModal');
-    if (!inp.value.trim()) return;
-    push(ref(db, 'messages'), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
-    inp.value = '';
-};
-
-function renderChat(msgs) {
-    const box = document.getElementById('chatMessages');
-    box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => `
-        <div style="font-size:13px; line-height:1.5;">
-            <span class="badge badge-${m.r}">${m.r}</span> 
-            <b style="color:${m.r==='moder'?'var(--moder)': (m.r==='admin'?'var(--danger)':'#fff')}">${m.u}:</b> 
-            <span style="color:rgba(255,255,255,0.8)">${m.t}</span>
-        </div>
-    `).join('');
-    box.scrollTop = box.scrollHeight;
-}
-
-// НАВИГАЦИЯ
+// ОБЩЕЕ
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('.main-nav button').forEach(b => b.classList.remove('active'));
     document.getElementById('nav-'+id)?.classList.add('active');
 };
+
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
 window.closeModal = () => document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
 window.setAuthMode = (m) => {
+    authMode = m;
     document.getElementById('tab-login').classList.toggle('active', m === 'login');
     document.getElementById('tab-reg').classList.toggle('active', m === 'reg');
 };
+
 window.notify = (t) => {
     const toast = document.getElementById('toast');
     toast.innerText = t; toast.style.display = 'block';
     setTimeout(() => toast.style.display = 'none', 3000);
 };
+
+// КЕЙСЫ
 window.openCase = () => {
     if (!currentUser) return openModal('authModal');
-    if (currentUser.balance < 50) return notify("Недостаточно средств!");
-    const items = ["Dragon Lore", "Karambit", "M9 Bayonet", "AK-47 Slate"];
-    const res = items[Math.floor(Math.random()*items.length)];
+    if (currentUser.balance < 50) return notify("Мало монет!");
+    const items = ["Aura Knife", "Neon AK", "Glock Water"];
+    const win = items[Math.floor(Math.random()*items.length)];
     update(ref(db, 'users/'+currentUser.name), { balance: currentUser.balance - 50 });
-    document.getElementById('caseDisplay').innerText = res;
-    notify("Вы выбили: " + res);
+    document.getElementById('caseDisplay').innerText = win;
+    notify("Выпало: " + win);
 };
+
+// Сессия
+const saved = localStorage.getItem('hurus_session');
+if (saved) {
+    currentUser = allUsers.find(u => u.name === saved);
+    if (currentUser) updateUI();
+}
