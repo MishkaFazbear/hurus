@@ -26,12 +26,15 @@ onValue(ref(db, '/'), (snapshot) => {
         allUsers = data.users ? Object.values(data.users) : [];
         renderChat(data.messages ? Object.values(data.messages) : []);
         
-        // Авто-логин из localStorage или обновление текущего юзера
+        // Проверка сессии и моментальный выход, если аккаунт удален
         const savedNick = localStorage.getItem('hurus_session');
-        if (savedNick && !currentUser) {
+        if (savedNick) {
             currentUser = allUsers.find(u => u.name === savedNick);
-        } else if (currentUser) {
-            currentUser = allUsers.find(u => u.name === currentUser.name);
+            if (!currentUser) {
+                // Если ник в сохраненной сессии есть, а в БД его больше нет — выкидываем
+                logout();
+                return;
+            }
         }
 
         if (currentUser) {
@@ -180,6 +183,7 @@ function renderAdmin() {
             <td><span class="badge badge-${u.role}">${u.role}</span></td>
             <td>
                 <button onclick="removeUser('${u.name}')" class="btn-del" title="Удалить юзера"><i class="fas fa-trash"></i></button>
+                <button onclick="clearInventory('${u.name}')" class="btn-del" title="Очистить инвентарь" style="color: #facc15;"><i class="fas fa-broom"></i></button>
                 <select onchange="changeRole('${u.name}', this.value)" style="background:#000; color:#fff; border:1px solid var(--border); padding:4px;">
                     <option value="">Роль...</option>
                     <option value="user">User</option>
@@ -207,13 +211,27 @@ window.removeUser = (name) => {
     if (confirm(`Удалить ${name}?`)) remove(ref(db, 'users/' + name));
 };
 
+// Функция очистки инвентаря
+window.clearInventory = (name) => {
+    if (confirm(`Точно удалить все скины у ${name}?`)) {
+        update(ref(db, 'users/' + name), { inventory: [] });
+        notify(`Инвентарь ${name} очищен!`);
+    }
+};
+
 // ОБЩЕЕ
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('.main-nav button').forEach(b => b.classList.remove('active'));
     document.getElementById('nav-'+id)?.classList.add('active');
+    
+    // СРАЗУ РЕНДЕРИМ АДМИНКУ ПРИ ОТКРЫТИИ
+    if (id === 'admin') {
+        renderAdmin();
+    }
 };
+
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
 window.closeModal = () => document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
 window.setAuthMode = (m) => {
