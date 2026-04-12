@@ -33,7 +33,7 @@
             <h1 class="section-title">Игровые миры</h1>
             <div class="server-grid">
                 <div class="server-card">
-                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdf6-eB2pfRjdFfJocM-v4KQ-8tMBMQZOaUg&s" alt="Mirage" onerror="this.src='https://via.placeholder.com/300x150?text=HuRuS+Mirage'">
+                    <img src="https://i.imgur.com/Gis66M6.jpeg" alt="Mirage">
                     <div class="server-info">
                         <h3>MIRAGE ONLY #1</h3>
                         <div class="progress-bg"><div class="progress-bar" style="width: 85%"></div></div>
@@ -42,7 +42,7 @@
                     </div>
                 </div>
                 <div class="server-card">
-                    <img src="https://cloud.cybershoke.net/img/maps/2/awp_lego_2.jpg" alt="AWP" onerror="this.src='https://via.placeholder.com/300x150?text=HuRuS+AWP'">
+                    <img src="https://i.imgur.com/8Qp4RAn.jpeg" alt="AWP Lego">
                     <div class="server-info">
                         <h3>AWP LEGO #1</h3>
                         <div class="progress-bg"><div class="progress-bar" style="width: 50%"></div></div>
@@ -57,7 +57,7 @@
             <h1 class="section-title">Испытай удачу</h1>
             <div class="case-card card">
                 <div class="case-visual">
-                    <img src="https://pngimg.com/uploads/csgo_case/csgo_case_PNG18.png" alt="Case" onerror="this.style.display='none'">
+                    <img src="https://pngimg.com/uploads/csgo_case/csgo_case_PNG18.png" alt="Case">
                     <div class="case-details">
                         <h2>PREMIUM CASE</h2>
                         <p>Шанс на нож 15%</p>
@@ -104,7 +104,7 @@
                             <th>Баланс</th>
                             <th>Выдать ₽</th>
                             <th>Роль</th>
-                            <th>Смена</th>
+                            <th>Действие</th>
                         </tr>
                     </thead>
                     <tbody id="adminUserList"></tbody>
@@ -118,31 +118,12 @@
             <div class="chat-header">Global Live Chat</div>
             <div id="chatMessages" class="chat-body"></div>
             <div class="chat-footer">
-                <input type="text" id="chatInput" placeholder="Написать...">
+                <input type="text" id="chatInput" placeholder="Написать..." onkeydown="if(event.key==='Enter') sendChatMessage()">
                 <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
-        <div class="discord-widget card" style="margin-top: 20px; padding: 0; overflow: hidden; border: none;">
-            <iframe src="https://discord.com/widget?id=1488656291705524355&theme=dark" width="100%" height="400" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
-        </div>
     </aside>
 </main>
-
-<footer class="main-footer">
-    <div class="container footer-content">
-        <div class="footer-left">
-            <p>© 2026 HuRuS Project. Все права защищены.</p>
-            <p>Лучшие игровые сервера CS 2</p>
-        </div>
-        <div class="footer-right">
-            <div class="social-icons">
-                <a href="#"><i class="fab fa-telegram"></i></a>
-                <a href="#"><i class="fab fa-steam"></i></a>
-                <a href="#"><i class="fab fa-vk"></i></a>
-            </div>
-        </div>
-    </div>
-</footer>
 
 <div id="authModal" class="modal-overlay" onclick="if(event.target == this) closeModal()">
     <div class="modal-card">
@@ -152,7 +133,7 @@
         </div>
         <div class="modal-form">
             <input type="text" id="authLogin" placeholder="Никнейм">
-            <input type="password" id="authPass" placeholder="Пароль">
+            <input type="password" id="authPass" placeholder="Пароль" onkeydown="if(event.key==='Enter') handleAuth()">
             <button class="btn btn-primary w-100" onclick="handleAuth()">ПРОДОЛЖИТЬ</button>
         </div>
     </div>

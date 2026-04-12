@@ -18,7 +18,7 @@ const db = getDatabase(app);
 let currentUser = null;
 let allUsers = [];
 
-// СИНХРОНИЗАЦИЯ С Firebase
+// СЛУШАТЕЛЬ ДАННЫХ
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
@@ -26,11 +26,8 @@ onValue(ref(db, '/'), (snapshot) => {
         renderChat(data.messages ? Object.values(data.messages) : []);
         
         if (currentUser) {
-            const freshData = allUsers.find(u => u.name === currentUser.name);
-            if (freshData) {
-                currentUser = freshData;
-                updateHeaderProfile(); // Обновляем баланс в шапке
-            }
+            const fresh = allUsers.find(u => u.name === currentUser.name);
+            if (fresh) { currentUser = fresh; updateHeader(); }
         }
         if (document.getElementById('admin').classList.contains('active')) renderAdmin();
     }
@@ -42,47 +39,73 @@ window.handleAuth = async () => {
     const p = document.getElementById('authPass').value.trim();
     if (!l || !p) return notify("Заполни поля!");
 
-    if (document.getElementById('tab-reg').classList.contains('active')) {
-        // Регистрация
+    const isReg = document.getElementById('tab-reg').classList.contains('active');
+    if (isReg) {
         if (allUsers.some(u => u.name === l)) return notify("Ник занят!");
-        const role = ['мишутка фазбер', 'sharizmound'].includes(l.toLowerCase()) ? 'admin' : 'user';
-        await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 0, role: role, inv: [] });
-        notify("Успешно! Теперь войди.");
+        await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 0, role: 'user', inv: [] });
+        notify("Успех! Теперь войди.");
         setAuthMode('login');
     } else {
-        // Вход
-        const user = allUsers.find(u => u.name === l && u.pass === p);
-        if (!user) return notify("Ошибка входа!");
-        currentUser = user;
-        onLoginSuccess();
+        const u = allUsers.find(u => u.name === l && u.pass === p);
+        if (!u) return notify("Неверные данные!");
+        currentUser = u;
+        onLogin();
     }
 };
 
-function onLoginSuccess() {
+function onLogin() {
     closeModal();
-    notify("Привет, " + currentUser.name);
-    updateHeaderProfile();
+    updateHeader();
     if (currentUser.role === 'admin') document.getElementById('adminLink').style.display = 'block';
+    notify("Привет, " + currentUser.name);
 }
 
-// ФУНКЦИЯ ОБНОВЛЕНИЯ ШАПКИ (Добавлен ник, баланс и кнопка ВЫЙТИ)
-function updateHeaderProfile() {
-    const authZone = document.getElementById('authZone');
-    authZone.innerHTML = `
-        <div style="display:flex; align-items:center; gap:20px;">
-            <div style="text-align:right;">
-                <div style="font-weight:800; font-size:14px; color:#fff;">${currentUser.name}</div>
-                <div style="font-size:12px; color:var(--success); font-weight:600;">${currentUser.balance} ₽</div>
+function updateHeader() {
+    const az = document.getElementById('authZone');
+    az.innerHTML = `
+        <div style="display:flex; align-items:center; gap:15px;">
+            <div style="text-align:right">
+                <div style="font-weight:800; font-size:13px">${currentUser.name}</div>
+                <div style="font-size:11px; color:var(--success)">${currentUser.balance} ₽</div>
             </div>
-            <button class="btn btn-danger btn-sm" onclick="logout()" style="padding: 8px 16px; font-size:10px;">ВЫЙТИ</button>
+            <button class="btn btn-danger" onclick="location.reload()" style="padding:5px 10px; font-size:9px">ВЫЙТИ</button>
         </div>
     `;
 }
 
-// ФУНКЦИЯ ВЫХОДА
-window.logout = () => {
-    currentUser = null;
-    location.reload(); // Самый простой способ сбросить состояние
+// АДМИНКА (Старая система с кнопками ОК)
+function renderAdmin() {
+    const list = document.getElementById('adminUserList');
+    list.innerHTML = allUsers.map(u => `
+        <tr>
+            <td>${u.name}</td>
+            <td>${u.balance} ₽</td>
+            <td>
+                <div style="display:flex; gap:5px">
+                    <input type="number" id="amt-${u.name}" placeholder="₽" style="width:50px">
+                    <button class="btn-ok" onclick="giveBalDirect('${u.name}')">OK</button>
+                </div>
+            </td>
+            <td>
+                <select id="role-${u.name}">
+                    <option value="user" ${u.role==='user'?'selected':''}>user</option>
+                    <option value="admin" ${u.role==='admin'?'selected':''}>admin</option>
+                </select>
+            </td>
+            <td><button class="btn-ok" onclick="saveRoleDirect('${u.name}')">OK</button></td>
+        </tr>
+    `).join('');
+}
+
+window.giveBalDirect = (name) => {
+    const amt = document.getElementById(`amt-${name}`).value;
+    const user = allUsers.find(u => u.name === name);
+    if (amt) update(ref(db, 'users/'+name), { balance: user.balance + parseInt(amt) });
+};
+
+window.saveRoleDirect = (name) => {
+    const role = document.getElementById(`role-${name}`).value;
+    update(ref(db, 'users/'+name), { role: role });
 };
 
 // ЧАТ
@@ -97,40 +120,17 @@ window.sendChatMessage = () => {
 function renderChat(msgs) {
     const box = document.getElementById('chatMessages');
     box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => `
-        <div style="margin-bottom:10px;"><span class="badge badge-${m.r}">${m.r}</span> <b>${m.u}:</b> ${m.t}</div>
+        <div style="margin-bottom:8px; font-size:13px"><span class="badge badge-${m.r}">${m.r}</span> <b>${m.u}:</b> ${m.t}</div>
     `).join('');
     box.scrollTop = box.scrollHeight;
 }
 
-// АДМИНКА
-function renderAdmin() {
-    const list = document.getElementById('adminUserList');
-    list.innerHTML = allUsers.map(u => `
-        <tr>
-            <td>${u.name}</td>
-            <td>${u.balance} ₽</td>
-            <td><button class="btn btn-primary btn-sm" onclick="giveBal('${u.name}')" style="padding:5px 10px; font-size:10px;">+ ₽</button></td>
-            <td><span class="badge badge-${u.role}">${u.role}</span></td>
-            <td><button class="btn btn-danger btn-sm" onclick="changeRole('${u.name}', 'admin')" style="padding:5px 10px; font-size:10px;">UP</button></td>
-        </tr>
-    `).join('');
-}
-
-window.giveBal = (name) => {
-    const amt = prompt("Сколько выдать?");
-    const user = allUsers.find(u => u.name === name);
-    if (amt && !isNaN(amt)) update(ref(db, 'users/'+name), { balance: user.balance + parseInt(amt) });
-};
-
-window.changeRole = (name, role) => update(ref(db, 'users/'+name), { role: role });
-
-// ОБЩЕЕ
+// НАВИГАЦИЯ И УТИЛИТЫ
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('.main-nav button').forEach(b => b.classList.remove('active'));
     document.getElementById('nav-'+id)?.classList.add('active');
-    if (id === 'admin') renderAdmin();
 };
 
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -147,10 +147,9 @@ window.notify = (t) => {
 
 window.openCase = () => {
     if (!currentUser) return openModal('authModal');
-    if (currentUser.balance < 50) return notify("Мало денег!");
-    const items = ["Aura Knife", "Retro AK-47", "Neon Glock"];
-    const win = items[Math.floor(Math.random() * items.length)];
-    update(ref(db, 'users/' + currentUser.name), { balance: currentUser.balance - 50 });
+    if (currentUser.balance < 50) return notify("Недостаточно средств!");
+    const items = ["Aura Knife", "Dragon Lore", "Asimov AK-47"];
+    const win = items[Math.floor(Math.random()*items.length)];
+    update(ref(db, 'users/'+currentUser.name), { balance: currentUser.balance - 50 });
     document.getElementById('caseDisplay').innerText = win;
-    notify("Выпало: " + win);
 };
