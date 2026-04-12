@@ -50,24 +50,6 @@
                         <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
                     </div>
                 </div>
-                <div class="server-card">
-                    <img src="https://cloud.cybershoke.net/img/maps/2/de_overpass.jpg" alt="Overpass">
-                    <div class="server-info">
-                        <h3>OVERPASS RETAKE</h3>
-                        <div class="progress-bg"><div class="progress-bar" style="width: 65%"></div></div>
-                        <p>13 / 20 игроков</p>
-                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
-                </div>
-                <div class="server-card">
-                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTK4bQmqhlfqFF4GSggiPigqtAuvb9CCC8Wcg&s" alt="Nuke">
-                    <div class="server-info">
-                        <h3>NUKE 24/7</h3>
-                        <div class="progress-bg"><div class="progress-bar" style="width: 20%"></div></div>
-                        <p>4 / 20 игроков</p>
-                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -89,8 +71,7 @@
             </div>
         
             <h3 style="margin-bottom:15px">Последние действия</h3>
-            <div class="card" id="adminLogs" style="height: 300px; overflow-y: auto; background: #000; border-color: #333;">
-                </div>
+            <div class="card" id="adminLogs" style="height: 300px; overflow-y: auto; background: #000; border-color: #333;"></div>
         </div>
         
         <div id="shop" class="page-section">
@@ -108,7 +89,6 @@
                     </ul>
                     <button class="btn-buy" onclick="notify('В разработке...')">КУПИТЬ</button>
                 </div>
-
                 <div class="shop-item premium">
                     <div class="shop-badge">GOLD</div>
                     <div class="shop-icon"><i class="fas fa-star"></i></div>
@@ -127,14 +107,15 @@
 
     <aside class="sidebar">
         <div class="chat-wrapper">
-            <div class="chat-header" id="chatTabs"></div>
-            
-            <div id="chatMessages" class="chat-body">
-                <div class="chat-placeholder">Выберите чат или нажмите на ник для ЛС</div>
+            <div class="chat-header" id="chatTabs">
+                <button id="tab-global" class="chat-tab-btn active" onclick="switchChat('global')">ГЛОБАЛЬНЫЙ ЧАТ</button>
             </div>
             
+            <div id="chatMessages" class="chat-body">
+                </div>
+            
             <div class="chat-footer">
-                <input type="text" id="chatInput" placeholder="Сообщение..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+                <input type="text" id="chatInput" placeholder="Введите сообщение..." onkeydown="if(event.key==='Enter') sendChatMessage()">
                 <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
@@ -151,12 +132,8 @@
             <div class="input-field"><i class="fas fa-user"></i><input type="text" id="authLogin" placeholder="Никнейм"></div>
             <div class="input-field"><i class="fas fa-lock"></i><input type="password" id="authPass" placeholder="Пароль"></div>
             <button class="btn btn-primary w-100" onclick="handleAuth()">ВЫПОЛНИТЬ</button>
-            
             <div class="auth-divider"><span>ИЛИ</span></div>
-            
-            <button class="btn btn-steam w-100" onclick="loginWithSteam()">
-                <i class="fab fa-steam"></i> ВОЙТИ ЧЕРЕЗ STEAM
-            </button>
+            <button class="btn btn-steam w-100" onclick="loginWithSteam()"><i class="fab fa-steam"></i> STEAM</button>
         </div>
     </div>
 </div>
@@ -164,8 +141,6 @@
 <div id="global-emoji-picker" class="emoji-picker-popup">
     <emoji-picker class="dark"></emoji-picker>
 </div>
-
-
 
 <div id="toast"></div>
 <script type="module" src="script.js"></script>
