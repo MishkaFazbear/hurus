@@ -89,7 +89,7 @@ window.loginWithSteam = () => {
     notify("Перенаправление в Steam...");
     
     // Переходим на сервер
-    window.location.href = backendUrl;
+    window.location.href = `${backendUrl}/auth/steam`;
 };
 
 window.logout = () => {
