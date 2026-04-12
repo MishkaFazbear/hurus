@@ -50,25 +50,7 @@
                         <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
                     </div>
                 </div>
-                <div class="server-card">
-                    <img src="https://i.ytimg.com/vi/1X9_p-7M7G4/maxresdefault.jpg" alt="Surf">
-                    <div class="server-info">
-                        <h3>SURF + BHOP</h3>
-                        <div class="progress-bg"><div class="progress-bar" style="width: 90%"></div></div>
-                        <p>28 / 32 игроков</p>
-                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
                 </div>
-                <div class="server-card">
-                    <img src="https://i.ytimg.com/vi/q_7n6E_h2Yw/maxresdefault.jpg" alt="Maniac">
-                    <div class="server-info">
-                        <h3>MANIAC MODE</h3>
-                        <div class="progress-bg"><div class="progress-bar" style="width: 10%"></div></div>
-                        <p>2 / 20 игроков</p>
-                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div id="cases" class="page-section">
@@ -89,7 +71,7 @@
         <div id="shop" class="page-section">
             <h2 class="section-title">Магазин привилегий</h2>
             <div class="shop-grid">
-                <div class="shop-card">
+                <div class="shop-card vip">
                     <h4>VIP</h4>
                     <ul>
                         <li><i class="fas fa-check"></i> Тэг [VIP]</li>
@@ -98,7 +80,7 @@
                     <div class="price">199 ₽ <span>/мес</span></div>
                     <button class="btn btn-shop">Купить</button>
                 </div>
-                <div class="shop-card gold">
+                <div class="shop-card premium">
                     <div class="hot-badge">POPULAR</div>
                     <h4>PREMIUM</h4>
                     <ul>
@@ -109,7 +91,7 @@
                     <div class="price">499 ₽ <span>/мес</span></div>
                     <button class="btn btn-shop">Купить</button>
                 </div>
-                <div class="shop-card diamond">
+                <div class="shop-card elite">
                     <h4>ELITE</h4>
                     <ul>
                         <li><i class="fas fa-check"></i> Всё от PREMIUM</li>
@@ -150,11 +132,29 @@
                 <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
-        <div class="discord-widget">
-            <iframe src="https://discord.com/widget?id=1488656291705524355&theme=dark" width="100%" height="400" allowtransparency="true" frameborder="0"></iframe>
-        </div>
     </aside>
 </main>
+
+<footer class="main-footer">
+    <div class="container footer-content">
+        <div class="footer-left">
+            <p>© 2024 Чиловый проект. Gen: 0.57 s.</p>
+            <p>ИП Каплин Александр Николаевич</p>
+            <p>ИНН 641001616170</p>
+            <p>ОГРНИП: 324645700080304</p>
+        </div>
+        <div class="footer-center">
+            <a href="#">Лицензионное соглашение</a>
+        </div>
+        <div class="footer-right">
+            <div class="social-icons">
+                <a href="#"><i class="fab fa-telegram"></i></a>
+                <a href="#"><i class="fab fa-steam"></i></a>
+                <a href="#"><i class="fab fa-vk"></i></a>
+            </div>
+        </div>
+    </div>
+</footer>
 
 <div id="authModal" class="modal-overlay" onclick="if(event.target == this) closeModal()">
     <div class="modal-box">
