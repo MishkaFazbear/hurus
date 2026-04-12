@@ -109,12 +109,12 @@ function renderChat(msgs) {
 
 // КЕЙСЫ
 const skins = [
-    {n: "AWP | Dragon Lore", r: "legendary", img: "🐲"},
-    {n: "Karambit | Doppler", r: "legendary", img: "🔪"},
-    {n: "AK-47 | Neon Rider", r: "epic", img: "🔫"},
-    {n: "M4A4 | Howl", r: "legendary", img: "🐺"},
-    {n: "Glock-18 | Fade", r: "rare", img: "🌈"},
-    {n: "P250 | Sand Dune", r: "common", img: "🏜️"}
+    {n: "AWP | Dragon Lore", r: "legendary", img: "https://stash.clash.gg/storage/img/skin_sideview/s422.png"},
+    {n: "Karambit | Doppler", r: "legendary", img: "https://community.fastly.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyL6kJ_m-B1Q7uCvZaZkNM-SA1iUzv5mvOR7cDm7lA4i4gKJk4jxNWXFb1cpDJR2FOFbsBTql9bjYbzq7gPZiN1MxH7_2ytNuCdpte1UB_Ui5OSJ2GbkVqni/330x192?allow_animated=1"},
+    {n: "AK-47 | Neon Rider", r: "epic", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvVWLxgb2VaDeU9L7JERaduIfcDRcBo-oBFw&s"},
+    {n: "M4A4 | Howl", r: "legendary", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVudeuZU4_u5OKoWkAx2VXzHaIwowEaosrQQ&s"},
+    {n: "Glock-18 | Fade", r: "rare", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXawvlE7ptxbIp-WiCbyqRL-CRVOKKthwa1A&s"},
+    {n: "P250 | Sand Dune", r: "common", img: "https://pub-5f12f7508ff04ae5925853dee0438460.r2.dev/data/images/wiki_gf1Kc6S_preview.png"}
 ];
 
 window.openCase = () => {
