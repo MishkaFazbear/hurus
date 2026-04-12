@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update, push, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, onValue, update, push, remove, get, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyA7j4u6K3HlgRWULMP0KAOUbjIHAuv5K6s",
@@ -19,7 +19,7 @@ let currentUser = null;
 let allUsers = [];
 let authMode = 'login';
 
-// --- ЛОГИКА STEAM (Обработка возврата) ---
+// --- STEAM AUTH LOGIC ---
 const urlParams = new URLSearchParams(window.location.search);
 const steamId = urlParams.get('steamid');
 const steamName = urlParams.get('name');
@@ -33,32 +33,22 @@ if (steamId && steamName) {
 async function handleSteamLogin(id, name, avatarUrl) {
     const avatar = avatarUrl || "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg";
     const userRef = ref(db, 'users/' + name);
-    
     const snapshot = await get(userRef);
     if (!snapshot.exists()) {
-        await set(userRef, { 
-            name: name, 
-            steamId: id,
-            avatar: avatar,
-            balance: 100, 
-            role: 'user', 
-            inventory: [] 
-        });
+        await set(userRef, { name: name, steamId: id, avatar: avatar, balance: 100, role: 'user', inventory: [] });
     } else {
         await update(userRef, { steamId: id, avatar: avatar });
     }
-
     localStorage.setItem('hurus_session', name);
-    // После входа через Steam принудительно обновляем страницу один раз
-    location.reload(); 
+    location.reload();
 }
 
-// --- СИНХРОНИЗАЦИЯ С БАЗОЙ ---
+// --- SYNC WITH DB ---
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
         allUsers = data.users ? Object.values(data.users) : [];
-        renderChat(data.messages ? Object.values(data.messages) : []);
+        renderChat(data.messages || {});
         
         const savedNick = localStorage.getItem('hurus_session');
         if (savedNick) {
@@ -67,20 +57,18 @@ onValue(ref(db, '/'), (snapshot) => {
                 currentUser = found;
                 updateUI();
                 updateInventory();
-                // Если мы сейчас в разделе админки, перерисовываем её
-                if (document.getElementById('admin').classList.contains('active')) renderAdmin();
             }
         }
+        if (document.getElementById('admin').classList.contains('active')) renderAdmin();
     }
 });
 
-// --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
+// --- UI & PROFILE ---
 function updateUI() {
     if (!currentUser) return;
-    
     const avatarHtml = currentUser.avatar 
-        ? `<img src="${currentUser.avatar}" class="profile-avatar" style="width:35px; border-radius:50%; border:2px solid var(--primary);">` 
-        : `<i class="fas fa-user-circle" style="font-size:24px;"></i>`;
+        ? `<img src="${currentUser.avatar}" class="profile-avatar">` 
+        : `<i class="fas fa-user-circle"></i>`;
 
     document.getElementById('authZone').innerHTML = `
         <div class="profile-info-block">
@@ -89,50 +77,96 @@ function updateUI() {
                 <div class="profile-nick">${currentUser.name}</div>
                 <div class="profile-balance">${currentUser.balance} ₽</div>
             </div>
-            <button class="btn-logout" onclick="logout()" title="Выйти"><i class="fas fa-sign-out-alt"></i></button>
+            <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     `;
-    
-    // ПРОВЕРКА РОЛИ: admin или moder
-    const hasAdminRights = ['admin', 'moder'].includes(currentUser.role);
-    const adminBtn = document.getElementById('adminLink');
-    const chatClearBtn = document.getElementById('clearChatBtn');
-    
-    if (adminBtn) adminBtn.style.display = hasAdminRights ? 'block' : 'none';
-    if (chatClearBtn) chatClearBtn.style.display = hasAdminRights ? 'block' : 'none';
-    
-    // Если права пропали, а мы в админке — выкидываем на главную
-    if (!hasAdminRights && document.getElementById('admin').classList.contains('active')) {
-        showSection('home');
-        notify("Доступ ограничен");
-    }
+    const isAdmin = ['admin', 'moder'].includes(currentUser.role);
+    document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('clearChatBtn').style.display = isAdmin ? 'block' : 'none';
 }
 
-// --- STAFF ПАНЕЛЬ (ВОССТАНОВЛЕНА) ---
+// --- CHAT WITH TIME & REACTIONS ---
+window.sendChatMessage = () => {
+    const inp = document.getElementById('chatInput');
+    if (!currentUser || !inp.value.trim()) return;
+    push(ref(db, 'messages'), {
+        u: currentUser.name,
+        r: currentUser.role,
+        t: inp.value,
+        time: Date.now(),
+        reactions: {}
+    });
+    inp.value = '';
+};
+
+function renderChat(messagesObj) {
+    const box = document.getElementById('chatMessages');
+    const msgs = Object.entries(messagesObj).map(([id, data]) => ({ id, ...data }));
+    
+    box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => {
+        const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        // Рендер существующих реакций
+        let reactHtml = '';
+        if (m.reactions) {
+            reactHtml = Object.entries(m.reactions).map(([emoji, count]) => `
+                <span class="chat-react-badge" onclick="addReaction('${m.id}', '${emoji}')">${emoji} ${count}</span>
+            `).join('');
+        }
+
+        return `
+            <div class="msg">
+                <div class="msg-header">
+                    <span class="badge badge-${m.r}">${m.r}</span>
+                    <span class="msg-author">${m.u}</span>
+                    <span class="msg-time">${timeStr}</span>
+                </div>
+                <div class="msg-text">${m.t}</div>
+                <div class="msg-footer">
+                    <div class="reactions-list">${reactHtml}</div>
+                    <div class="reaction-picker">
+                        <button onclick="addReaction('${m.id}', '🔥')">🔥</button>
+                        <button onclick="addReaction('${m.id}', '❤️')">❤️</button>
+                        <button onclick="addReaction('${m.id}', '👍')">👍</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+}
+
+window.addReaction = (msgId, emoji) => {
+    if (!currentUser) return notify("Войдите, чтобы ставить реакции");
+    const reactRef = ref(db, `messages/${msgId}/reactions/${emoji}`);
+    
+    runTransaction(reactRef, (currentCount) => {
+        return (currentCount || 0) + 1;
+    });
+};
+
+window.clearChat = () => {
+    if (confirm("Очистить чат?")) set(ref(db, 'messages'), null);
+};
+
+// --- STAFF PANEL ---
 window.renderAdmin = () => {
     const list = document.getElementById('adminUserList');
-    if (!list) return;
-
     list.innerHTML = allUsers.map(u => `
         <tr>
-            <td>
-                ${u.avatar ? `<img src="${u.avatar}" style="width:24px; border-radius:50%; vertical-align:middle; margin-right:5px;">` : ''}
-                <b>${u.name}</b>
-            </td>
+            <td>${u.avatar ? `<img src="${u.avatar}" class="admin-table-av">` : ''} <b>${u.name}</b></td>
             <td>${u.balance} ₽</td>
             <td>
-                <input type="number" id="sum-${u.name}" placeholder="Сумма" style="width:70px; background:#000; color:#fff; border:1px solid var(--border); padding:4px; border-radius:4px;">
-                <button onclick="giveBal('${u.name}')" class="btn-ok" style="background:var(--success); color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">+</button>
+                <input type="number" id="sum-${u.name}" placeholder="₽" class="admin-input">
+                <button onclick="giveBal('${u.name}')" class="btn-ok">+</button>
             </td>
             <td><span class="badge badge-${u.role}">${u.role}</span></td>
             <td>
-                <button onclick="removeUser('${u.name}')" class="btn-del" style="color:var(--danger); background:none; border:none; cursor:pointer; font-size:16px; margin-right:10px;"><i class="fas fa-trash"></i></button>
-                <select onchange="changeRole('${u.name}', this.value)" style="background:#000; color:#fff; border:1px solid var(--border); border-radius:4px;">
+                <button onclick="removeUser('${u.name}')" class="btn-del"><i class="fas fa-trash"></i></button>
+                <select onchange="changeRole('${u.name}', this.value)" class="admin-select">
                     <option value="">Роль...</option>
-                    <option value="user">User</option>
-                    <option value="vip">VIP</option>
-                    <option value="moder">Moder</option>
-                    <option value="admin">Admin</option>
+                    <option value="user">User</option><option value="vip">VIP</option>
+                    <option value="moder">Moder</option><option value="admin">Admin</option>
                 </select>
             </td>
         </tr>
@@ -143,58 +177,19 @@ window.giveBal = (name) => {
     const input = document.getElementById('sum-' + name);
     const val = parseInt(input.value);
     const u = allUsers.find(x => x.name === name);
-    if (!isNaN(val) && u) {
+    if (!isNaN(val)) {
         update(ref(db, 'users/' + name), { balance: (u.balance || 0) + val });
         input.value = '';
-        notify(`Баланс ${name} обновлен`);
     }
 };
 
-window.changeRole = (name, role) => {
-    if (role) {
-        update(ref(db, 'users/' + name), { role: role });
-        notify(`Роль ${name} изменена на ${role}`);
-    }
-};
-
+window.changeRole = (name, role) => { if (role) update(ref(db, 'users/' + name), { role: role }); };
 window.removeUser = (name) => {
     if (name === currentUser.name) return notify("Себя нельзя!");
-    if (confirm(`Удалить пользователя ${name}?`)) {
-        remove(ref(db, 'users/' + name));
-    }
+    if (confirm(`Удалить ${name}?`)) remove(ref(db, 'users/' + name));
 };
 
-// --- ОСТАЛЬНОЕ ---
-
-window.handleAuth = async () => {
-    const l = document.getElementById('authLogin').value.trim();
-    const p = document.getElementById('authPass').value.trim();
-    if (!l || !p) return notify("Заполни поля!");
-
-    if (authMode === 'reg') {
-        if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
-        const role = ['мишутка фазбер', 'sharizmound'].includes(l.toLowerCase()) ? 'admin' : 'user';
-        await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 100, role: role, inventory: [] });
-        notify("Регистрация успешна!");
-        setAuthMode('login');
-    } else {
-        const found = allUsers.find(u => u.name === l && u.pass === p);
-        if (!found) return notify("Ошибка входа!");
-        currentUser = found; 
-        localStorage.setItem('hurus_session', currentUser.name);
-        closeModal();
-    }
-};
-
-window.loginWithSteam = () => {
-    window.location.href = "https://hurus-backend.onrender.com/auth/steam";
-};
-
-window.logout = () => {
-    localStorage.removeItem('hurus_session');
-    location.reload(); 
-};
-
+// --- GENERAL ---
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -203,26 +198,23 @@ window.showSection = (id) => {
     if (id === 'admin') renderAdmin();
 };
 
-window.sendChatMessage = () => {
-    const inp = document.getElementById('chatInput');
-    if (!currentUser || !inp.value.trim()) return;
-    push(ref(db, 'messages'), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
-    inp.value = '';
+window.handleAuth = async () => {
+    const l = document.getElementById('authLogin').value.trim();
+    const p = document.getElementById('authPass').value.trim();
+    if (authMode === 'reg') {
+        if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
+        await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 100, role: 'user' });
+        setAuthMode('login');
+    } else {
+        const found = allUsers.find(u => u.name === l && u.pass === p);
+        if (!found) return notify("Ошибка!");
+        localStorage.setItem('hurus_session', found.name);
+        closeModal();
+    }
 };
 
-window.clearChat = () => {
-    if (confirm("Очистить весь чат?")) set(ref(db, 'messages'), null);
-};
-
-function renderChat(msgs) {
-    const box = document.getElementById('chatMessages');
-    if (!box) return;
-    box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => `
-        <div class="msg"><span class="badge badge-${m.r}">${m.r}</span> <b>${m.u}:</b> ${m.t}</div>
-    `).join('');
-    box.scrollTop = box.scrollHeight;
-}
-
+window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
+window.loginWithSteam = () => { window.location.href = "https://hurus-backend.onrender.com/auth/steam"; };
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
 window.closeModal = () => document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
 window.setAuthMode = (m) => {
@@ -232,11 +224,7 @@ window.setAuthMode = (m) => {
 };
 window.notify = (t) => {
     const toast = document.getElementById('toast');
-    if(toast) {
-        toast.innerText = t; toast.style.display = 'block';
-        setTimeout(() => toast.style.display = 'none', 3000);
-    }
+    toast.innerText = t; toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 3000);
 };
-
-// Заглушки, чтобы не было ошибок
-function updateInventory() {}
+function updateInventory() {} // Заглушка
