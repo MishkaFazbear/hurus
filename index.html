@@ -151,7 +151,10 @@
         <div class="chat-wrapper">
             <div class="chat-header" id="chatTabs">
                 <button id="tab-global" class="active" onclick="switchChat('global')">Глобальный</button>
-                </div>
+                <button id="clearChatBtn" class="btn-clear-chat" onclick="clearChat()" style="display: none;">
+                    <i class="fas fa-broom"></i>
+                </button>
+            </div>
             
             <div id="chatMessages" class="chat-body"></div>
             

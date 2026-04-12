@@ -135,74 +135,14 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .skin-epic { color: var(--epic); }
 .skin-rare { color: var(--rare); }
 
-/* ОБНОВЛЕННЫЙ ЧАТ */
-.chat-wrapper { 
-    background: var(--card); 
-    border-radius: 20px; 
-    border: 1px solid var(--border); 
-    height: 600px; /* Фиксированная высота */
-    display: flex; 
-    flex-direction: column; 
-    overflow: hidden; 
-    position: sticky;
-    top: 100px;
-}
-
-.chat-header { 
-    padding: 15px 20px; 
-    border-bottom: 1px solid var(--border); 
-    display: flex; 
-    gap: 15px;
-    align-items: center;
-    background: rgba(0,0,0,0.2); 
-    flex-shrink: 0;
-}
-
-/* Стили вкладок (исправляем странный вид кнопок) */
-.chat-header button {
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 5px 0 !important;
-    color: var(--text-dim);
-    font-weight: 800;
-    cursor: pointer;
-    font-size: 13px;
-    text-transform: uppercase;
-    transition: 0.3s;
-    border-bottom: 2px solid transparent !important;
-    border-radius: 0 !important;
-    width: auto !important;
-}
-
-.chat-header button.active {
-    color: var(--primary);
-    border-bottom: 2px solid var(--primary) !important;
-}
-
-.chat-body { 
-    flex: 1; 
-    padding: 15px; 
-    overflow-y: auto; /* Внутренняя прокрутка */
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--primary) transparent;
-}
-
-/* Скроллбар для Chrome/Safari */
-.chat-body::-webkit-scrollbar { width: 4px; }
-.chat-body::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
-
-.chat-footer { 
-    padding: 15px; 
-    display: flex; 
-    gap: 10px; 
-    background: rgba(0,0,0,0.3); 
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-}
+/* ЧАТ */
+.chat-wrapper { background: var(--card); border-radius: 20px; border: 1px solid var(--border); height: 650px; display: flex; flex-direction: column; overflow: hidden; }
+.chat-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; font-weight: 800; background: rgba(0,0,0,0.2); }
+.chat-body { flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; }
+.msg { margin-bottom: 10px; line-height: 1.5; }
+.chat-footer { padding: 15px; display: flex; gap: 10px; background: rgba(0,0,0,0.3); }
+.chat-footer input { flex: 1; background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 10px; }
+.chat-footer button { background: var(--primary-grad); border: none; color: #fff; width: 45px; border-radius: 10px; cursor: pointer; }
 
 /* STAFF */
 .btn-ok { background: var(--success); color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
