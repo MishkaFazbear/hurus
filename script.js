@@ -1,21 +1,45 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, onValue, update, push, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
 // Проверка, пришел ли пользователь после входа через Steam
 const urlParams = new URLSearchParams(window.location.search);
 const steamId = urlParams.get('steamid');
 const steamName = urlParams.get('name');
+const steamAvatar = urlParams.get('avatar'); // Ожидаем аватарку от бэкенда
 
 if (steamId && steamName) {
-    // Если данные есть, создаем/входим в профиль автоматически
-    handleSteamLogin(steamId, steamName);
-    // Очищаем URL от данных для красоты
+    handleSteamLogin(steamId, steamName, steamAvatar);
     window.history.replaceState({}, document.title, window.location.pathname);
 }
 
-async function handleSteamLogin(id, name) {
-    // Логика поиска пользователя в Firebase по SteamID
-    // (Аналогично твоей функции handleAuth)
-    notify(`Добро пожаловать, ${name}!`);
+// Асинхронная функция обработки входа Steam
+async function handleSteamLogin(id, name, avatarUrl) {
+    // Ставим дефолтную аватарку Steam, если бэкенд её не передал
+    const avatar = avatarUrl || "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"; 
+    
+    // Получаем доступ к базе до инициализации onValue, чтобы сразу создать/обновить профиль
+    const dbInstance = getDatabase(); 
+    const userRef = ref(dbInstance, 'users/' + name);
+    
+    const snapshot = await get(userRef);
+    if (!snapshot.exists()) {
+        // Если игрок заходит впервые — создаем ему профиль
+        await set(userRef, { 
+            name: name, 
+            steamId: id,
+            avatar: avatar,
+            balance: 100, 
+            role: 'user', 
+            inventory: [] 
+        });
+    } else {
+        // Если уже был — просто обновляем аватарку (вдруг он сменил её в Стиме)
+        await update(userRef, { avatar: avatar });
+    }
+
+    // Сохраняем сессию и перезагружаем страницу для чистого входа
+    localStorage.setItem('hurus_session', name);
+    location.reload();
 }
 
 const firebaseConfig = {
@@ -59,7 +83,7 @@ onValue(ref(db, '/'), (snapshot) => {
     }
 });
 
-// АВТОРИЗАЦИЯ
+// АВТОРИЗАЦИЯ Обычная
 window.handleAuth = async () => {
     const l = document.getElementById('authLogin').value.trim();
     const p = document.getElementById('authPass').value.trim();
@@ -99,17 +123,24 @@ window.logout = () => {
 
 function updateUI() {
     if (!currentUser) return;
+    
+    // Генерируем HTML для аватарки
+    const avatarHtml = currentUser.avatar 
+        ? `<img src="${currentUser.avatar}" alt="Steam Avatar" class="profile-avatar">` 
+        : `<div class="profile-avatar-placeholder"><i class="fas fa-user"></i></div>`;
+
     document.getElementById('authZone').innerHTML = `
         <div class="profile-info-block">
+            ${avatarHtml}
             <div class="profile-text-data">
                 <div class="profile-nick">${currentUser.name}</div>
                 <div class="profile-balance">${currentUser.balance} ₽</div>
             </div>
-            <button class="btn-logout" onclick="logout()">ВЫЙТИ</button>
+            <button class="btn-logout" onclick="logout()" title="Выйти"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     `;
     
-    // Мгновенное обновление прав (Фикс)
+    // Мгновенное обновление прав
     const hasAdminRights = ['admin', 'moder'].includes(currentUser.role);
     document.getElementById('adminLink').style.display = hasAdminRights ? 'block' : 'none';
     document.getElementById('clearChatBtn').style.display = hasAdminRights ? 'block' : 'none';
@@ -195,7 +226,10 @@ function renderAdmin() {
     const list = document.getElementById('adminUserList');
     list.innerHTML = allUsers.map(u => `
         <tr>
-            <td><b>${u.name}</b></td>
+            <td>
+                ${u.avatar ? `<img src="${u.avatar}" style="width:24px; height:24px; border-radius:50%; vertical-align:middle; margin-right:5px;">` : ''}
+                <b>${u.name}</b>
+            </td>
             <td>${u.balance} ₽</td>
             <td>
                 <input type="number" id="sum-${u.name}" placeholder="Сумма" style="width:70px; background:#000; color:#fff; border:1px solid var(--border);">
