@@ -116,7 +116,7 @@ const skins = [
     {n: "Karambit | Doppler", r: "legendary", img: "https://community.fastly.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyL6kJ_m-B1Q7uCvZaZkNM-SA1iUzv5mvOR7cDm7lA4i4gKJk4jxNWXFb1cpDJR2FOFbsBTql9bjYbzq7gPZiN1MxH7_2ytNuCdpte1UB_Ui5OSJ2GbkVqni/330x192?allow_animated=1"},
     {n: "AK-47 | Neon Rider", r: "epic", img: "https://ss.bitskins.com/ab/ab6308d8e743e1fcc04fd5b10fd48489-front.webp"},
     {n: "M4A4 | Howl", r: "legendary", img: "https://ss.bitskins.com/63/637aae983f5b92f555787c7d4e7ba3e7-front.webp?2"},
-    {n: "Glock-18 | Fade", r: "rare", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXawvlE7ptxbIp-WiCbyqRL-CRVOKKthwa1A&shttps://images.steamusercontent.com/ugc/2470862704803492244/EF1CE85BE7C1E97F4DD6119BF6C53763588CE3DF/"},
+    {n: "Glock-18 | Fade", r: "rare", img: "https://pricempire.com/assets/guides/glock-18-fade-guide-the-ultimate-guide-to-all-full-fade-and-99-fade-patterns-for/6.webp"},
     {n: "P250 | Sand Dune", r: "common", img: "https://pub-5f12f7508ff04ae5925853dee0438460.r2.dev/data/images/wiki_gf1Kc6S_preview.png"}
 ];
 
