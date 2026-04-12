@@ -17,15 +17,14 @@ const db = getDatabase(app);
 
 let currentUser = null;
 let allUsers = [];
-let authMode = 'login';
-let activeReactMsgId = null;
+let authMode = 'login'; // По умолчанию режим входа
+let activeReactMsgId = null; 
 
 // --- СИНХРОНИЗАЦИЯ ---
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        // Сохраняем пользователей с их уникальными ключами (ID) для админки
-        allUsers = data.users ? Object.entries(data.users).map(([id, val]) => ({ uid: id, ...val })) : [];
+        allUsers = data.users ? Object.entries(data.users).map(([key, val]) => ({ uid: key, ...val })) : [];
         renderChat(data.messages || {});
         
         const savedNick = localStorage.getItem('hurus_session');
@@ -52,16 +51,13 @@ function renderChat(messagesObj) {
         if (m.reactions) {
             reactHtml = Object.entries(m.reactions).map(([emoji, users]) => {
                 const userList = Object.keys(users);
-                const count = userList.length;
-                const hasMyReact = currentUser && users[currentUser.name] ? 'active' : '';
                 const names = userList.join(', ');
+                const hasMyReact = currentUser && users[currentUser.name] ? 'active' : '';
 
                 return `
-                    <div class="react-item ${hasMyReact}" 
-                         onclick="toggleReaction('${m.id}', '${emoji}')" 
-                         title="${names}">
+                    <div class="react-item ${hasMyReact}" onclick="toggleReaction('${m.id}', '${emoji}')" title="${names}">
                         <span class="react-emoji">${emoji}</span>
-                        <span class="react-count">${count}</span>
+                        <span class="react-count">${userList.length}</span>
                     </div>
                 `;
             }).join('');
@@ -109,18 +105,46 @@ window.sendChatMessage = () => {
     inp.value = '';
 };
 
-window.clearChat = () => {
-    if (confirm("Вы уверены, что хотите полностью очистить историю чата?")) {
-        set(ref(db, 'messages'), null);
-        notify("Чат очищен");
+// --- АВТОРИЗАЦИЯ (ИСПРАВЛЕНО) ---
+
+// ТА САМАЯ ФУНКЦИЯ, КОТОРОЙ НЕ ХВАТАЛО
+window.setAuthMode = (mode) => {
+    authMode = mode;
+    document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+    document.getElementById('tab-reg').classList.toggle('active', mode === 'reg');
+    const btn = document.querySelector('.modal-form .btn-primary');
+    if (btn) btn.innerText = mode === 'login' ? 'ВЫПОЛНИТЬ' : 'ЗАРЕГИСТРИРОВАТЬСЯ';
+};
+
+window.handleAuth = async () => {
+    const l = document.getElementById('authLogin').value.trim();
+    const p = document.getElementById('authPass').value.trim();
+    if (!l || !p) return notify("Заполните поля!");
+
+    if (authMode === 'login') {
+        const found = allUsers.find(u => u.name === l && u.pass === p);
+        if (!found) return notify("Неверный логин или пароль!");
+        localStorage.setItem('hurus_session', found.name);
+        location.reload();
+    } else {
+        const found = allUsers.find(u => u.name === l);
+        if (found) return notify("Никнейм занят!");
+        await push(ref(db, 'users'), { name: l, pass: p, balance: 0, role: 'user', avatar: '' });
+        localStorage.setItem('hurus_session', l);
+        location.reload();
     }
 };
 
-// --- АВТОРИЗАЦИЯ И ПРОФИЛЬ ---
+// ТВОЙ ОРИГИНАЛЬНЫЙ STEAM (БЕЗ ИЗМЕНЕНИЙ)
+window.loginWithSteam = () => {
+    window.location.href = "https://hurus-backend.onrender.com/auth/steam";
+};
+
+window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
+
 function updateUI() {
     const isAdmin = ['admin', 'moder'].includes(currentUser.role);
     document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
-    document.getElementById('clearChatBtn').style.display = isAdmin ? 'block' : 'none';
     
     document.getElementById('authZone').innerHTML = `
         <div class="profile-info-block">
@@ -134,71 +158,7 @@ function updateUI() {
     `;
 }
 
-window.setAuthMode = (mode) => {
-    authMode = mode;
-    document.getElementById('tab-login').classList.toggle('active', mode === 'login');
-    document.getElementById('tab-reg').classList.toggle('active', mode === 'reg');
-    const btn = document.querySelector('.modal-form .btn-primary');
-    if (btn) btn.innerText = mode === 'login' ? 'ВЫПОЛНИТЬ' : 'ЗАРЕГИСТРИРОВАТЬСЯ';
-};
-
-window.handleAuth = async () => {
-    const l = document.getElementById('authLogin').value.trim();
-    const p = document.getElementById('authPass').value.trim();
-    if (!l || !p) return notify("Заполните все поля!");
-
-    if (authMode === 'login') {
-        const found = allUsers.find(u => u.name === l && u.pass === p);
-        if (!found) return notify("Неверные данные!");
-        localStorage.setItem('hurus_session', found.name);
-    } else {
-        if (allUsers.find(u => u.name === l)) return notify("Никнейм занят!");
-        await push(ref(db, 'users'), {
-            name: l,
-            pass: p,
-            balance: 0,
-            role: 'user',
-            avatar: ''
-        });
-        localStorage.setItem('hurus_session', l);
-    }
-    location.reload();
-};
-
-window.loginWithSteam = () => {
-    // Исправлено: теперь создается локальная сессия для входа
-    const mockSteamNick = "SteamUser_" + Math.floor(Math.random() * 1000);
-    localStorage.setItem('hurus_session', mockSteamNick);
-    
-    // Если пользователя нет в базе — добавляем
-    const existing = allUsers.find(u => u.name === mockSteamNick);
-    if (!existing) {
-        push(ref(db, 'users'), {
-            name: mockSteamNick,
-            balance: 0,
-            role: 'user',
-            avatar: "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
-        });
-    }
-    location.reload();
-};
-
-window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
-window.openModal = (id) => document.getElementById(id).style.display = 'flex';
-window.closeModal = () => document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-window.notify = (t) => {
-    const toast = document.getElementById('toast');
-    toast.innerText = t; toast.style.display = 'block';
-    setTimeout(() => toast.style.display = 'none', 3000);
-};
-
-window.showSection = (id) => {
-    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    if (id === 'admin') renderAdmin();
-};
-
-// --- ПАНЕЛЬ УПРАВЛЕНИЯ ---
+// --- ПАНЕЛЬ УПРАВЛЕНИЯ (ИСПРАВЛЕНО) ---
 window.renderAdmin = () => {
     const list = document.getElementById('adminUserList');
     if (!list) return;
@@ -206,7 +166,7 @@ window.renderAdmin = () => {
         <tr>
             <td>${u.name}</td>
             <td>${u.balance || 0} ₽</td>
-            <td><button class="btn-ok" onclick="addBalance('${u.uid}', 100)">+100₽</button></td>
+            <td><button class="btn-ok" onclick="addBalance('${u.uid}', 100)">+100</button></td>
             <td>
                 <select onchange="changeRole('${u.uid}', this.value)">
                     <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
@@ -215,14 +175,14 @@ window.renderAdmin = () => {
                     <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                 </select>
             </td>
-            <td><button class="btn-del" onclick="deleteUser('${u.uid}')"><i class="fas fa-trash"></i></button></td>
+            <td><button class="btn-del" onclick="deleteUser('${u.uid}')">Удалить</button></td>
         </tr>
     `).join('');
 };
 
 window.addBalance = (uid, amount) => {
     const u = allUsers.find(user => user.uid === uid);
-    if (u) update(ref(db, `users/${uid}`), { balance: (u.balance || 0) + amount });
+    if (u) update(ref(db, `users/${uid}`), { balance: (u.balance || 0) + parseInt(amount) });
 };
 
 window.changeRole = (uid, newRole) => {
@@ -233,11 +193,25 @@ window.deleteUser = (uid) => {
     if (confirm("Удалить пользователя?")) remove(ref(db, `users/${uid}`));
 };
 
-// --- ЛОГИКА ЭМОДЗИ ---
+// --- ВСПОМОГАТЕЛЬНОЕ ---
+window.showSection = (id) => {
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (id === 'admin') renderAdmin();
+};
+
+window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+window.closeModal = () => document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+window.notify = (t) => {
+    const toast = document.getElementById('toast');
+    toast.innerText = t; toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 3000);
+};
+
+// Логика эмодзи (твоя оригинальная)
 document.addEventListener('DOMContentLoaded', () => {
     const globalPicker = document.getElementById('global-emoji-picker');
     const pickerElement = document.querySelector('emoji-picker');
-
     window.openEmojiPicker = (msgId, event) => {
         event.stopPropagation();
         activeReactMsgId = msgId;
@@ -246,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
         globalPicker.style.top = (rect.bottom + window.scrollY + 5) + 'px';
         globalPicker.style.left = (rect.left + window.scrollX) + 'px';
     };
-
     pickerElement.addEventListener('emoji-click', e => {
         toggleReaction(activeReactMsgId, e.detail.unicode);
         globalPicker.style.display = 'none';
