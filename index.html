@@ -26,7 +26,6 @@
 
     <main class="container main-grid">
         <section class="content">
-            
             <div id="home" class="page-section active">
                 <h1 class="section-title">Сервера HuRuS</h1>
                 <div id="serverList" class="grid">
@@ -35,39 +34,19 @@
                 </div>
             </div>
 
-            <div id="tasks" class="page-section">
-                <h1 class="section-title">Задания</h1>
-                <div class="grid" id="taskList"></div>
-            </div>
-
             <div id="cases" class="page-section">
                 <h1 class="section-title">Кейсы</h1>
                 <div class="case-container card">
-                    <div class="case-info">
-                        <h3>HuRuS Mystery Box</h3>
-                        <p>Цена: 50 ₽</p>
-                    </div>
+                    <h3>HuRuS Mystery Box</h3>
+                    <p>Цена: 50 ₽</p>
                     <div id="caseDisplay" class="case-roll">?</div>
                     <button class="btn btn-primary w-100" onclick="openCase()">Открыть</button>
-                    <div class="inventory-title">Твой инвентарь:</div>
-                    <div id="inventory" class="inventory-grid"></div>
-                </div>
-            </div>
-
-            <div id="shop" class="page-section">
-                <h1 class="section-title">Магазин</h1>
-                <div class="grid">
-                    <div class="card item-card">
-                        <div class="item-badge">CS2</div>
-                        <h3>Разбан</h3>
-                        <p class="price">300 ₽</p>
-                        <button class="btn btn-primary w-100">Купить</button>
-                    </div>
+                    <div id="inventory" class="inventory-grid" style="margin-top:20px;"></div>
                 </div>
             </div>
 
             <div id="admin" class="page-section">
-                <h1 class="section-title red">Staff Control</h1>
+                <h1 class="section-title" style="color:var(--danger)">Staff Control</h1>
                 <div class="card" style="overflow-x: auto;">
                     <table class="admin-table">
                         <thead>
@@ -97,10 +76,16 @@
                     <button onclick="sendChatMessage()">➔</button>
                 </div>
             </div>
+
+            <div class="discord-widget card" style="margin-top: 20px; padding: 0; overflow: hidden; border: none;">
+                <iframe src="https://discord.com/widget?id=1488656291705524355&theme=dark" 
+                        width="100%" height="400" allowtransparency="true" frameborder="0" 
+                        sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+            </div>
         </aside>
     </main>
 
-    <div id="authModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+    <div id="authModal" class="modal-overlay" onclick="if(event.target == this) closeModal()">
         <div class="modal-card">
             <div class="modal-tabs">
                 <button id="tab-login" class="active" onclick="setAuthMode('login')">Вход</button>
@@ -109,7 +94,7 @@
             <div class="modal-form">
                 <input type="text" id="authLogin" placeholder="Никнейм">
                 <input type="password" id="authPass" placeholder="Пароль">
-                <button class="btn btn-primary w-100" onclick="handleAuth()" id="authBtn">Продолжить</button>
+                <button class="btn btn-primary w-100" onclick="handleAuth()">Продолжить</button>
             </div>
         </div>
     </div>
