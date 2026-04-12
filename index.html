@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HuRuS Project | Game Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="container header-wrap">
+            <div class="logo" onclick="showSection('home')">HuRuS<span>PROJECT</span></div>
+            <nav>
+                <button onclick="showSection('home')" id="nav-home" class="active">Сервера</button>
+                <button onclick="showSection('tasks')" id="nav-tasks">Задания</button>
+                <button onclick="showSection('cases')" id="nav-cases">Кейсы</button>
+                <button onclick="showSection('shop')" id="nav-shop">Магазин</button>
+                <button onclick="showSection('admin')" id="adminLink" style="display: none;">Панель Staff</button>
+            </nav>
+            <div id="authZone">
+                <button class="btn btn-primary" onclick="openModal('authModal')">Войти</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container main-grid">
+        <section class="content">
+            
+            <div id="home" class="page-section active">
+                <h1 class="section-title">Сервера HuRuS</h1>
+                <div id="serverList" class="grid"></div>
+            </div>
+
+            <div id="tasks" class="page-section">
+                <h1 class="section-title">Задания и Бонусы</h1>
+                <div class="grid" id="taskList"></div>
+            </div>
+
+            <div id="cases" class="page-section">
+                <h1 class="section-title">Кейсы HuRuS</h1>
+                <div class="case-container card">
+                    <div class="case-info">
+                        <h3>HuRuS Mystery Box</h3>
+                        <p>Цена открытия: 50 ₽</p>
+                    </div>
+                    <div id="caseDisplay" class="case-roll">?</div>
+                    <button class="btn btn-primary w-100" id="caseBtn" onclick="openCase()">Испытать удачу</button>
+                    <div class="inventory-title">Ваш инвентарь:</div>
+                    <div id="inventory" class="inventory-grid"></div>
+                </div>
+            </div>
+
+            <div id="shop" class="page-section">
+                <h1 class="section-title">Магазин</h1>
+                <div class="grid">
+                    <div class="card item-card">
+                        <div class="item-badge">PREMIUM</div>
+                        <h3>Разбан аккаунта</h3>
+                        <p class="price">300 ₽</p>
+                        <button class="btn btn-primary w-100" onclick="buyItem('Разбан', 300)">Купить</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="admin" class="page-section">
+                <h1 class="section-title red">Staff Control Panel</h1>
+                <div class="card" style="overflow-x: auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Игрок</th>
+                                <th>Баланс</th>
+                                <th>Выдача ₽</th>
+                                <th>Роль</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminUserList"></tbody>
+                    </table>
+                </div>
+                <div id="wipeZone" style="display: none;">
+                    <button class="btn btn-danger" onclick="wipeDatabase()" style="margin-top: 20px;">ПОЛНЫЙ ВАЙП ПРОЕКТА</button>
+                </div>
+            </div>
+        </section>
+
+        <aside class="sidebar">
+            <div class="chat-wrapper">
+                <div class="chat-header">HuRuS Global Chat</div>
+                <div id="chatMessages" class="chat-body"></div>
+                <div class="chat-footer">
+                    <input type="text" id="chatInput" placeholder="Введите сообщение...">
+                    <button onclick="sendChatMessage()">➔</button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <div id="authModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+        <div class="modal-card">
+            <div class="modal-tabs">
+                <button id="tab-login" class="active" onclick="setAuthMode('login')">Вход</button>
+                <button id="tab-reg" onclick="setAuthMode('reg')">Регистрация</button>
+            </div>
+            <div class="modal-form">
+                <input type="text" id="authLogin" placeholder="Ваш ник">
+                <input type="password" id="authPass" placeholder="Пароль">
+                <button class="btn btn-primary w-100" id="authBtn" onclick="handleAuth()">Продолжить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
