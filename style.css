@@ -10,7 +10,6 @@
     --success: #10b981;
     --text: #ffffff;
     --text-dim: #94a3b8;
-    
     --legendary: #eb4b4b;
     --epic: #d32ee6;
     --rare: #4b69ff;
@@ -19,75 +18,79 @@
 body { background: var(--bg); color: var(--text); font-family: 'Montserrat', sans-serif; margin: 0; }
 .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
-/* КНОПКА ОЧИСТКИ ЧАТА */
-.chat-clear-icon { background: none; border: none; color: var(--danger); opacity: 0.6; cursor: pointer; padding: 5px; transition: 0.3s; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-.chat-clear-icon:hover { opacity: 1; transform: scale(1.1); }
+header { background: rgba(0,0,0,0.8); border-bottom: 1px solid var(--border); height: 70px; display: flex; align-items: center; position: sticky; top:0; z-index: 100; }
+.header-flex { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.logo { font-weight: 800; cursor: pointer; font-size: 1.2rem; }
+.logo span { color: var(--primary); }
 
-/* МАГАЗИН ПРИВИЛЕГИЙ (НОВЫЙ) */
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 20px; }
-.shop-item { background: var(--card); border-radius: 24px; padding: 40px 30px; text-align: center; position: relative; border: 1px solid var(--border); transition: 0.4s; overflow: hidden; }
-.shop-item:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+.main-nav button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-weight: 600; margin: 0 10px; transition: 0.3s; }
+.main-nav button.active { color: #fff; }
 
-.shop-badge { position: absolute; top: 20px; right: -30px; background: var(--primary-grad); color: #fff; padding: 5px 40px; transform: rotate(45deg); font-size: 10px; font-weight: 800; letter-spacing: 1px; }
-.shop-icon { font-size: 3rem; margin-bottom: 20px; color: var(--primary); }
-.shop-price { font-size: 2.5rem; font-weight: 800; margin-bottom: 25px; }
-.shop-price span { font-size: 1rem; color: var(--text-dim); }
+.main-layout { display: grid; grid-template-columns: 1fr 300px; gap: 30px; margin-top: 30px; }
 
-.shop-features { list-style: none; padding: 0; margin-bottom: 35px; text-align: left; }
-.shop-features li { margin-bottom: 12px; font-size: 14px; color: var(--text-dim); display: flex; align-items: center; gap: 10px; }
-.shop-features i { color: var(--success); font-size: 12px; }
+.card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 20px; }
 
-.btn-buy { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--primary-grad); color: #fff; font-weight: 800; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(157, 80, 187, 0.3); }
-.btn-buy:hover { opacity: 0.9; box-shadow: 0 8px 25px rgba(157, 80, 187, 0.5); }
+/* МАГАЗИН КЛАССИКА */
+.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.shop-card { background: var(--card); border: 1px solid var(--border); padding: 25px; border-radius: 15px; text-align: center; }
+.features-list { list-style: none; padding: 0; text-align: left; margin: 20px 0; }
+.features-list li { margin-bottom: 8px; color: var(--text-dim); font-size: 14px; }
+.price { font-size: 1.5rem; font-weight: 800; margin-bottom: 15px; }
 
-/* ПРОФИЛЬ В ШАПКЕ */
-.profile-block { display: flex; align-items: center; gap: 20px; background: rgba(255,255,255,0.03); padding: 8px 15px; border-radius: 15px; border: 1px solid var(--border); }
-.p-info { display: flex; flex-direction: column; line-height: 1.2; }
-.p-name { font-weight: 800; font-size: 14px; }
-.p-money { color: var(--success); font-size: 12px; font-weight: 700; }
-.logout-link { background: none; border: none; color: var(--danger); font-size: 10px; cursor: pointer; font-weight: 700; text-transform: uppercase; padding: 0; }
+/* ИНВЕНТАРЬ */
+.inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; }
+.inventory-item { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 10px; text-align: center; }
+.item-icon { font-size: 2rem; }
+.item-name { font-size: 11px; margin-top: 5px; }
 
-/* ОБЩИЕ СТИЛИ (БАДЖИ И ТАБЛИЦЫ) */
-.badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 800; color: #fff; }
+/* ЧАТ */
+.chat-wrapper { background: var(--card); border-radius: 12px; height: 500px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
+.chat-header { padding: 10px 15px; background: rgba(255,255,255,0.03); font-weight: 800; font-size: 12px; display: flex; justify-content: space-between; }
+.chat-body { flex: 1; padding: 10px; overflow-y: auto; font-size: 13px; }
+.chat-footer { padding: 10px; display: flex; gap: 5px; }
+.chat-footer input { flex: 1; background: #000; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 5px; }
+
+/* КЕЙСЫ */
+.case-visual { display: flex; align-items: center; gap: 20px; }
+.case-res { font-size: 1.2rem; font-weight: 800; margin: 15px 0; }
+
+.skin-legendary { color: var(--legendary); }
+.skin-epic { color: var(--epic); }
+
+/* БАДЖИ */
+.badge { font-size: 9px; padding: 2px 5px; border-radius: 3px; color: #fff; text-transform: uppercase; font-weight: 800; }
 .badge-admin { background: var(--danger); }
-.badge-moder { background: var(--moder); }
+.badge-moder { background: var(--primary); }
 .badge-user { background: #444; }
 
-.staff-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-.staff-table th { text-align: left; font-size: 11px; color: var(--text-dim); padding: 10px; border-bottom: 1px solid var(--border); }
-.staff-table td { padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
-.btn-sm { padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; color: #fff; margin-right: 5px; }
-.btn-danger { background: var(--danger); }
-.btn-success { background: var(--success); }
+.btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 700; transition: 0.3s; }
+.btn-primary { background: var(--primary-grad); color: #fff; }
+.w-100 { width: 100%; }
 
-/* ОСТАЛЬНОЕ (КАК БЫЛО) */
-header { background: rgba(11, 11, 15, 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; }
-.header-flex { height: 80px; display: flex; justify-content: space-between; align-items: center; }
-.logo { font-weight: 800; font-size: 1.5rem; cursor: pointer; }
-.logo span { color: var(--primary); }
-.main-nav { display: flex; gap: 10px; }
-.main-nav button { background: none; border: none; color: var(--text-dim); font-weight: 600; cursor: pointer; font-size: 13px; transition: 0.3s; }
-.main-nav button.active { color: #fff; text-shadow: 0 0 10px var(--primary); }
+.profile-compact { font-size: 13px; }
+.logout-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-weight: 700; font-size: 11px; margin-left: 10px; }
 
-.main-layout { display: grid; grid-template-columns: 1fr 320px; gap: 30px; margin-top: 40px; min-height: 80vh; }
 .page-section { display: none; }
-.page-section.active { display: block; animation: fadeIn 0.3s; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.page-section.active { display: block; }
 
-.chat-wrapper { background: var(--card); border-radius: 20px; border: 1px solid var(--border); height: 600px; display: flex; flex-direction: column; overflow: hidden; position: sticky; top: 120px; }
-.chat-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 12px; letter-spacing: 1px; }
-.chat-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-.chat-footer { padding: 15px; display: flex; gap: 8px; background: rgba(0,0,0,0.2); }
-.chat-footer input { flex: 1; background: #000; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 10px; }
-.chat-footer button { background: var(--primary-grad); border: none; color: #fff; width: 40px; border-radius: 10px; cursor: pointer; }
+.staff-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.staff-table td { padding: 10px; border-bottom: 1px solid var(--border); }
+.btn-del { background: none; border: none; color: var(--danger); cursor: pointer; }
+.btn-add { background: none; border: none; color: var(--success); cursor: pointer; font-size: 18px; }
 
-.server-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-.server-card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid var(--border); }
-.server-card img { width: 100%; height: 160px; object-fit: cover; }
-.server-info { padding: 15px; }
+#toast { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 5px; display: none; }
 
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 2000; }
-.modal-card { background: var(--card); padding: 30px; border-radius: 20px; width: 320px; }
-.input-field { margin-bottom: 15px; position: relative; }
-.input-field i { position: absolute; left: 12px; top: 14px; color: var(--text-dim); }
-.input-field input { width: 100%; padding: 12px 12px 12px 35px; background: #000; border: 1px solid var(--border); border-radius: 10px; color: #fff; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; }
+.modal-card { background: var(--card); padding: 30px; border-radius: 15px; width: 300px; }
+.modal-tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid var(--border); }
+.modal-tabs button { flex: 1; padding: 10px; background: none; border: none; color: var(--text-dim); cursor: pointer; }
+.modal-tabs button.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+.input-field { margin-bottom: 10px; }
+.input-field input { width: 100%; padding: 10px; background: #000; border: 1px solid var(--border); color: #fff; border-radius: 5px; }
+
+.server-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.server-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.server-card img { width: 100%; height: 120px; object-fit: cover; }
+.server-info { padding: 10px; }
+.progress-bg { background: #222; height: 4px; border-radius: 5px; margin: 5px 0; }
+.progress-bar { background: var(--primary); height: 100%; border-radius: 5px; }
