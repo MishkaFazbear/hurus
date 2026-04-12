@@ -50,7 +50,7 @@
                         <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
                     </div>
                 </div>
-                </div>
+            </div>
         </div>
 
         <div id="cases" class="page-section">
@@ -60,9 +60,8 @@
                     <img src="https://pngimg.com/uploads/csgo_case/csgo_case_PNG18.png" alt="Case">
                     <div class="case-info">
                         <h3>PREMIUM CASE</h3>
-                        <p>Шанс на нож 15%</p>
                         <div id="caseDisplay" class="case-res">?</div>
-                        <button class="btn btn-main" onclick="openCase()">ОТКРЫТЬ ЗА 50 ₽</button>
+                        <button class="btn btn-main" onclick="openCase()">ОТКРЫТЬ [50 ₽]</button>
                     </div>
                 </div>
             </div>
@@ -77,45 +76,37 @@
                         <li><i class="fas fa-check"></i> Тэг [VIP]</li>
                         <li><i class="fas fa-check"></i> Скины на оружие</li>
                     </ul>
-                    <div class="price">199 ₽ <span>/мес</span></div>
-                    <button class="btn btn-shop">Купить</button>
+                    <div class="price">199 ₽</div>
+                    <button class="btn-shop">Купить</button>
                 </div>
                 <div class="shop-card premium">
                     <div class="hot-badge">POPULAR</div>
                     <h4>PREMIUM</h4>
                     <ul>
                         <li><i class="fas fa-check"></i> Всё от VIP</li>
-                        <li><i class="fas fa-check"></i> Админ-меню (lite)</li>
-                        <li><i class="fas fa-check"></i> Резервный слот</li>
+                        <li><i class="fas fa-check"></i> Админ-меню</li>
                     </ul>
-                    <div class="price">499 ₽ <span>/мес</span></div>
-                    <button class="btn btn-shop">Купить</button>
+                    <div class="price">499 ₽</div>
+                    <button class="btn-shop">Купить</button>
                 </div>
                 <div class="shop-card elite">
                     <h4>ELITE</h4>
                     <ul>
                         <li><i class="fas fa-check"></i> Всё от PREMIUM</li>
-                        <li><i class="fas fa-check"></i> Иммунитет к бану</li>
-                        <li><i class="fas fa-check"></i> Паутинка (hook)</li>
+                        <li><i class="fas fa-check"></i> Паутинка</li>
                     </ul>
-                    <div class="price">999 ₽ <span>/мес</span></div>
-                    <button class="btn btn-shop">Купить</button>
+                    <div class="price">999 ₽</div>
+                    <button class="btn-shop">Купить</button>
                 </div>
             </div>
         </div>
 
         <div id="admin" class="page-section">
-            <h2 class="section-title" style="color:#ff4d4d">Управление персоналом</h2>
+            <h2 class="section-title" style="color:#ff4d4d">Staff Control</h2>
             <div class="admin-panel">
                 <table class="staff-table">
                     <thead>
-                        <tr>
-                            <th>Игрок</th>
-                            <th>Баланс</th>
-                            <th>Действия</th>
-                            <th>Роль</th>
-                            <th>Сменить роль</th>
-                        </tr>
+                        <tr><th>Игрок</th><th>Баланс</th><th>Действия</th><th>Роль</th><th>Смена</th></tr>
                     </thead>
                     <tbody id="adminUserList"></tbody>
                 </table>
@@ -125,7 +116,7 @@
 
     <aside class="sidebar">
         <div class="chat-container">
-            <div class="chat-header"><i class="fas fa-comments"></i> LIVE CHAT</div>
+            <div class="chat-header">LIVE CHAT</div>
             <div id="chatMessages" class="chat-body"></div>
             <div class="chat-footer">
                 <input type="text" id="chatInput" placeholder="Написать...">
@@ -138,10 +129,8 @@
 <footer class="main-footer">
     <div class="container footer-content">
         <div class="footer-left">
-            <p>© 2024 Чиловый проект. Gen: 0.57 s.</p>
-            <p>ИП Каплин Александр Николаевич</p>
-            <p>ИНН 641001616170</p>
-            <p>ОГРНИП: 324645700080304</p>
+            <p>© 2026 HuRuS Project. Все права защищены.</p>
+            <p>Лучшие игровые сервера CS 2</p>
         </div>
         <div class="footer-center">
             <a href="#">Лицензионное соглашение</a>
@@ -156,7 +145,7 @@
     </div>
 </footer>
 
-<div id="authModal" class="modal-overlay" onclick="if(event.target == this) closeModal()">
+<div id="authModal" class="modal-overlay">
     <div class="modal-box">
         <div class="modal-tabs">
             <button id="tab-login" class="active" onclick="setAuthMode('login')">ВХОД</button>
