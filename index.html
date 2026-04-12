@@ -167,7 +167,13 @@
         <div class="modal-form">
             <div class="input-field"><i class="fas fa-user"></i><input type="text" id="authLogin" placeholder="Никнейм"></div>
             <div class="input-field"><i class="fas fa-lock"></i><input type="password" id="authPass" placeholder="Пароль"></div>
-            <button class="btn btn-primary w-100" onclick="handleAuth()">ВОЙТИ</button>
+            <button class="btn btn-primary w-100" onclick="handleAuth()">ВЫПОЛНИТЬ</button>
+            
+            <div class="auth-divider"><span>ИЛИ</span></div>
+            
+            <button class="btn btn-steam w-100" onclick="loginWithSteam()">
+                <i class="fab fa-steam"></i> ВОЙТИ ЧЕРЕЗ STEAM
+            </button>
         </div>
     </div>
 </div>

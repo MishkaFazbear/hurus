@@ -56,71 +56,29 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .progress-bg { background: #222; height: 6px; border-radius: 10px; margin: 15px 0 5px; }
 .progress-bar { background: var(--primary-grad); height: 100%; border-radius: 10px; box-shadow: 0 0 10px var(--primary); }
 
-/* МАГАЗИН ПРИВИЛЕГИЙ (НОВЫЙ) */
+/* МАГАЗИН */
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 20px; }
 .shop-item { background: var(--card); border-radius: 24px; padding: 40px 30px; text-align: center; position: relative; border: 1px solid var(--border); transition: 0.4s; overflow: hidden; }
-.shop-item:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-
-.shop-badge { position: absolute; top: 20px; right: -30px; background: var(--primary-grad); color: #fff; padding: 5px 40px; transform: rotate(45deg); font-size: 10px; font-weight: 800; letter-spacing: 1px; }
+.shop-item:hover { transform: translateY(-10px); border-color: var(--primary); }
+.shop-badge { position: absolute; top: 20px; right: -30px; background: var(--primary-grad); color: #fff; padding: 5px 40px; transform: rotate(45deg); font-size: 10px; font-weight: 800; }
 .shop-icon { font-size: 3rem; margin-bottom: 20px; color: var(--primary); }
 .shop-price { font-size: 2.5rem; font-weight: 800; margin-bottom: 25px; }
 .shop-price span { font-size: 1rem; color: var(--text-dim); }
-
 .shop-features { list-style: none; padding: 0; margin-bottom: 35px; text-align: left; }
 .shop-features li { margin-bottom: 12px; font-size: 14px; color: var(--text-dim); display: flex; align-items: center; gap: 10px; }
-.shop-features i { color: var(--success); font-size: 12px; }
-
-.btn-buy { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--primary-grad); color: #fff; font-weight: 800; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(157, 80, 187, 0.3); }
-.btn-buy:hover { opacity: 0.9; box-shadow: 0 8px 25px rgba(157, 80, 187, 0.5); }
+.shop-features i { color: var(--success); }
+.btn-buy { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--primary-grad); color: #fff; font-weight: 800; cursor: pointer; }
 
 /* КЕЙСЫ */
 .case-visual { display: flex; align-items: center; gap: 40px; padding: 30px; }
 .case-res { font-size: 1.5rem; font-weight: 800; margin: 25px 0; min-height: 40px; color: var(--primary); }
 
 /* ИНВЕНТАРЬ */
-.inventory-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 15px;
-}
-
-.inventory-item {
-    background: var(--card);
-    border: 1px solid var(--border);
-    padding: 15px;
-    border-radius: 15px;
-    text-align: center;
-    transition: 0.3s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 180px; 
-}
-
-.item-icon {
-    width: 100%;
-    height: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 10px;
-}
-
-.item-icon img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain; 
-    filter: drop-shadow(0 0 5px rgba(255,255,255,0.1));
-}
-
-.item-name {
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1.2;
-    margin-top: auto;
-    min-height: 26px;
-}
+.inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+.inventory-item { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 15px; text-align: center; transition: 0.3s; display: flex; flex-direction: column; min-height: 180px; }
+.item-icon { width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+.item-icon img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.item-name { font-size: 11px; font-weight: 700; margin-top: auto; }
 
 .skin-legendary { color: var(--legendary); text-shadow: 0 0 5px var(--legendary); }
 .skin-epic { color: var(--epic); }
@@ -135,23 +93,29 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .chat-footer input { flex: 1; background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 10px; }
 .chat-footer button { background: var(--primary-grad); border: none; color: #fff; width: 45px; border-radius: 10px; cursor: pointer; }
 
-/* АДМИНКА */
+/* STAFF */
 .btn-ok { background: var(--success); color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-.btn-del { background: none; color: var(--danger); border: none; cursor: pointer; margin-right: 10px; font-size: 16px; }
+.btn-del { background: none; color: var(--danger); border: none; cursor: pointer; font-size: 16px; }
 .staff-table { width: 100%; border-collapse: collapse; }
 .staff-table th { text-align: left; padding: 15px; color: var(--text-dim); font-size: 12px; }
 .staff-table td { padding: 15px; border-bottom: 1px solid var(--border); }
 
+/* STEAM & DIVIDER */
+.auth-divider { margin: 20px 0; text-align: center; position: relative; border-bottom: 1px solid var(--border); height: 10px; }
+.auth-divider span { background: var(--card); padding: 0 15px; color: var(--text-dim); font-size: 10px; font-weight: 800; position: relative; top: 2px; }
+.btn-steam { background: #171a21; color: #fff; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgba(255,255,255,0.1); font-size: 13px; cursor: pointer; padding: 12px; border-radius: 10px; transition: 0.3s; }
+.btn-steam:hover { background: #2a475e; box-shadow: 0 0 20px rgba(42, 71, 94, 0.4); transform: translateY(-2px); }
+
 /* ОБЩЕЕ */
 .btn { padding: 12px 25px; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.3s; }
 .btn-primary { background: var(--primary-grad); color: #fff; box-shadow: 0 4px 15px rgba(157, 80, 187, 0.3); }
-.btn-primary:hover { transform: translateY(-2px); opacity: 0.9; }
 .w-100 { width: 100%; }
 .card { background: var(--card); border-radius: 20px; padding: 25px; border: 1px solid var(--border); }
 .page-section { display: none; }
 .page-section.active { display: block; animation: fadeIn 0.4s; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* МОДАЛКИ */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(5px); }
 .modal-card { background: var(--card); padding: 40px; border-radius: 25px; width: 350px; border: 1px solid var(--border); }
 .modal-tabs { display: flex; margin-bottom: 25px; }
@@ -161,60 +125,17 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
 .input-field i { position: absolute; left: 15px; top: 15px; color: var(--text-dim); }
 .input-field input { width: 100%; padding: 15px 15px 15px 45px; background: #000; border: 1px solid var(--border); border-radius: 12px; color: #fff; }
 
-#toast { position: fixed; bottom: 30px; right: 30px; background: var(--primary); color: #fff; padding: 15px 30px; border-radius: 12px; display: none; z-index: 3000; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+#toast { position: fixed; bottom: 30px; right: 30px; background: var(--primary); color: #fff; padding: 15px 30px; border-radius: 12px; display: none; z-index: 3000; font-weight: 700; }
 
-
-/* =========================================
-   АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
-   ========================================= */
+/* АДАПТИВНОСТЬ */
 @media (max-width: 768px) {
-    .header-flex {
-        flex-direction: column;
-        height: auto;
-        padding: 15px 0;
-        gap: 15px;
-    }
-    
-    .main-nav {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    .main-layout {
-        grid-template-columns: 1fr; 
-        margin-top: 20px;
-    }
-    
-    .case-visual {
-        flex-direction: column;
-        text-align: center;
-        gap: 20px;
-        padding: 20px 10px;
-    }
-    
-    .card {
-        padding: 15px;
-    }
-    .staff-table {
-        font-size: 12px;
-    }
-    
-    .inventory-grid {
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    }
-    
-    .chat-wrapper {
-        height: 500px;
-        margin-bottom: 20px;
-    }
+    .header-flex { flex-direction: column; height: auto; padding: 15px 0; gap: 15px; }
+    .main-nav { flex-wrap: wrap; justify-content: center; }
+    .main-layout { grid-template-columns: 1fr; margin-top: 20px; }
+    .case-visual { flex-direction: column; text-align: center; gap: 20px; padding: 20px 10px; }
+    .inventory-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+    .chat-wrapper { height: 500px; margin-bottom: 20px; }
 }
-
 @media (max-width: 480px) {
-    .profile-info-block {
-        width: 100%;
-        justify-content: space-between;
-    }
-    .shop-price {
-        font-size: 2rem;
-    }
+    .modal-card { width: 90%; padding: 30px 20px; }
 }
