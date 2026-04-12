@@ -121,6 +121,18 @@ function renderChat(messagesObj) {
     const box = document.getElementById('chatMessages');
     const msgs = Object.entries(messagesObj || {}).map(([id, data]) => ({ id, ...data }));
     
+    // Функция для подсветки @ и #
+    const formatTags = (text) => {
+        if (!text) return '';
+        // Защита от HTML-инъекций
+        let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        // Отмечание @пользователь
+        safeText = safeText.replace(/@([a-zA-Z0-9_а-яА-ЯёЁ]+)/g, '<span class="mention">@$1</span>');
+        // Хештеги #тег
+        safeText = safeText.replace(/#([a-zA-Z0-9_а-яА-ЯёЁ]+)/g, '<span class="hashtag">#$1</span>');
+        return safeText;
+    };
+
     box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => {
         const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const userRole = m.r || 'user';
@@ -148,8 +160,7 @@ function renderChat(messagesObj) {
                     <span class="msg-author">${m.u}</span>
                     <span class="msg-time">${timeStr}</span>
                 </div>
-                <div class="msg-text">${m.t}</div>
-                <div class="msg-footer">
+                <div class="msg-text">${formatTags(m.t)}</div> <div class="msg-footer">
                     <div class="reactions-container">
                         ${reactHtml}
                         <button class="btn-add-emoji" onclick="openEmojiPicker('${m.id}', event)">

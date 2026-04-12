@@ -310,17 +310,26 @@ header {
 }
 
 /* ЧАТ */
-/* ЧАТ */
-.chat-wrapper {
-    background: var(--card);
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    height: 450px;
-    /* Было 650px - уменьши это значение */
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+.chat-container { /* БЫЛ .chat-wrapper */
+    background: var(--card); 
+    border-radius: 20px; 
+    border: 1px solid var(--border); 
+    height: 400px; /* Уменьшенная высота */
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
 }
+.chat-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: flex-start; gap: 15px; font-weight: 800; background: rgba(0,0,0,0.2); }
+.chat-body { flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; }
+.msg { margin-bottom: 10px; line-height: 1.5; }
+.chat-footer { padding: 15px; display: flex; gap: 10px; background: rgba(0,0,0,0.3); }
+.chat-footer input { flex: 1; background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 10px; }
+.chat-footer button { background: var(--primary-grad); border: none; color: #fff; width: 45px; border-radius: 10px; cursor: pointer; }
+
+/* СТИЛИ ДЛЯ @ И # */
+.mention { background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 6px; font-weight: 700; font-size: 12px; }
+.hashtag { color: var(--moder-color); font-weight: 600; cursor: pointer; transition: 0.2s; }
+.hashtag:hover { text-decoration: underline; }
 
 .chat-header {
     padding: 15px 20px;
@@ -680,9 +689,9 @@ emoji-picker {
             margin-top: 20px;
         }
 
-        .chat-wrapper {
-            height: 350px;
-            margin-bottom: 20px;
+        @media (max-width: 768px) {
+            /* ... остальные стили ... */
+            .chat-container { height: 350px; margin-bottom: 20px; } /* Заменили имя класса тут тоже */
         }
 
         /* Было 500px - тоже уменьшено */

@@ -17,8 +17,6 @@
         <div class="logo" onclick="showSection('home')">HuRuS<span>PROJECT</span></div>
         <nav class="main-nav">
             <button onclick="showSection('home')" id="nav-home" class="active"><i class="fas fa-server"></i> СЕРВЕРА</button>
-            <button onclick="showSection('cases')" id="nav-cases"><i class="fas fa-box-open"></i> КЕЙСЫ</button>
-            <button onclick="showSection('inventory')" id="nav-inventory"><i class="fas fa-backpack"></i> ИНВЕНТАРЬ</button>
             <button onclick="showSection('shop')" id="nav-shop"><i class="fas fa-shopping-cart"></i> МАГАЗИН</button>
             <button onclick="showSection('admin')" id="adminLink" style="display: none;"><i class="fas fa-user-shield"></i> STAFF</button>
         </nav>
@@ -73,26 +71,6 @@
             </div>
         </div>
 
-        <div id="cases" class="page-section">
-            <h1 class="section-title">Испытай удачу</h1>
-            <div class="case-card card">
-                <div class="case-visual">
-                    <img src="https://community.fastly.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGJKz2lu_XsnXwtmkJjSU91dh8bj35VTqVBP4io_frnAVvfb6aqduc_TFVjTCxbx05OU4S3jilE9w4DzRnImtIy2Sa1JzDJEhRPlK7EcO4U8gfA/360fx360f" alt="Revolution Case" style="width:220px">
-                    <div class="case-details">
-                        <h2>REVOLUTION CASE</h2>
-                        <p>Предметы: Тайное, Засекреченное, Ножи</p>
-                        <div id="caseDisplay" class="case-res">Нажми открыть!</div>
-                        <button id="openBtn" class="btn btn-primary w-100 open-btn" onclick="openCase()">ОТКРЫТЬ ЗА 100 ₽</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="inventory" class="page-section">
-            <h1 class="section-title">Мои скины</h1>
-            <div id="inventoryGrid" class="inventory-grid">
-                </div>
-        </div>
 
         <div id="admin" class="page-section">
             <h1 class="section-title" style="color:var(--danger)">Панель управления</h1>
