@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HuRuS Project | Game Portal</title>
+    <title>HuRuS Project | Official</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -29,24 +29,27 @@
             
             <div id="home" class="page-section active">
                 <h1 class="section-title">Сервера HuRuS</h1>
-                <div id="serverList" class="grid"></div>
+                <div id="serverList" class="grid">
+                    <div class="card">HuRuS MIRAGE #1 (12/20)</div>
+                    <div class="card">HuRuS AWP LEGO (8/16)</div>
+                </div>
             </div>
 
             <div id="tasks" class="page-section">
-                <h1 class="section-title">Задания и Бонусы</h1>
+                <h1 class="section-title">Задания</h1>
                 <div class="grid" id="taskList"></div>
             </div>
 
             <div id="cases" class="page-section">
-                <h1 class="section-title">Кейсы HuRuS</h1>
+                <h1 class="section-title">Кейсы</h1>
                 <div class="case-container card">
                     <div class="case-info">
                         <h3>HuRuS Mystery Box</h3>
-                        <p>Цена открытия: 50 ₽</p>
+                        <p>Цена: 50 ₽</p>
                     </div>
                     <div id="caseDisplay" class="case-roll">?</div>
-                    <button class="btn btn-primary w-100" id="caseBtn" onclick="openCase()">Испытать удачу</button>
-                    <div class="inventory-title">Ваш инвентарь:</div>
+                    <button class="btn btn-primary w-100" onclick="openCase()">Открыть</button>
+                    <div class="inventory-title">Твой инвентарь:</div>
                     <div id="inventory" class="inventory-grid"></div>
                 </div>
             </div>
@@ -55,23 +58,23 @@
                 <h1 class="section-title">Магазин</h1>
                 <div class="grid">
                     <div class="card item-card">
-                        <div class="item-badge">PREMIUM</div>
-                        <h3>Разбан аккаунта</h3>
+                        <div class="item-badge">CS2</div>
+                        <h3>Разбан</h3>
                         <p class="price">300 ₽</p>
-                        <button class="btn btn-primary w-100" onclick="buyItem('Разбан', 300)">Купить</button>
+                        <button class="btn btn-primary w-100">Купить</button>
                     </div>
                 </div>
             </div>
 
             <div id="admin" class="page-section">
-                <h1 class="section-title red">Staff Control Panel</h1>
+                <h1 class="section-title red">Staff Control</h1>
                 <div class="card" style="overflow-x: auto;">
                     <table class="admin-table">
                         <thead>
                             <tr>
                                 <th>Игрок</th>
                                 <th>Баланс</th>
-                                <th>Выдача ₽</th>
+                                <th>Выдать ₽</th>
                                 <th>Роль</th>
                                 <th>Действия</th>
                             </tr>
@@ -80,17 +83,17 @@
                     </table>
                 </div>
                 <div id="wipeZone" style="display: none;">
-                    <button class="btn btn-danger" onclick="wipeDatabase()" style="margin-top: 20px;">ПОЛНЫЙ ВАЙП ПРОЕКТА</button>
+                    <button class="btn btn-danger" onclick="wipeDatabase()" style="margin-top: 20px;">Вайп всех игроков</button>
                 </div>
             </div>
         </section>
 
         <aside class="sidebar">
             <div class="chat-wrapper">
-                <div class="chat-header">HuRuS Global Chat</div>
+                <div class="chat-header">Global Live Chat</div>
                 <div id="chatMessages" class="chat-body"></div>
                 <div class="chat-footer">
-                    <input type="text" id="chatInput" placeholder="Введите сообщение...">
+                    <input type="text" id="chatInput" placeholder="Сообщение...">
                     <button onclick="sendChatMessage()">➔</button>
                 </div>
             </div>
@@ -104,9 +107,9 @@
                 <button id="tab-reg" onclick="setAuthMode('reg')">Регистрация</button>
             </div>
             <div class="modal-form">
-                <input type="text" id="authLogin" placeholder="Ваш ник">
+                <input type="text" id="authLogin" placeholder="Никнейм">
                 <input type="password" id="authPass" placeholder="Пароль">
-                <button class="btn btn-primary w-100" id="authBtn" onclick="handleAuth()">Продолжить</button>
+                <button class="btn btn-primary w-100" onclick="handleAuth()" id="authBtn">Продолжить</button>
             </div>
         </div>
     </div>
