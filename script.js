@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update, push, remove, get, query, limitToLast, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, onValue, update, push, remove, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyA7j4u6K3HlgRWULMP0KAOUbjIHAuv5K6s",
@@ -19,10 +19,8 @@ let currentUser = null;
 let allUsers = [];
 let allLogs = [];
 let authMode = 'login';
-let activeReactMsgId = null; 
-let selectedUserForMenu = null; // Хранит имя пользователя для контекстного меню
+let selectedUserForMenu = null;
 
-// --- ПЕРЕМЕННЫЕ ДЛЯ ЧАТА ---
 let currentChatTab = 'global'; 
 let globalMessages = {};
 let catMessages = {};
@@ -32,13 +30,7 @@ let unreadPms = new Set();
 
 const catUsers = ['mishkafazbear', 'amonphous', 'SharizMound', 'HuRuS'];
 
-// --- АВТОРИЗАЦИЯ ---
-const urlParams = new URLSearchParams(window.location.search);
-const steamNick = urlParams.get('nickname') || urlParams.get('name'); 
-if (steamNick) {
-    localStorage.setItem('hurus_session', steamNick);
-    window.history.replaceState({}, document.title, window.location.pathname);
-}
+// --- СЛУШАТЕЛИ FIREBASE ---
 
 onValue(ref(db, 'users'), (snapshot) => {
     const data = snapshot.val() || {};
@@ -48,14 +40,9 @@ onValue(ref(db, 'users'), (snapshot) => {
     if (savedNick) {
         const found = allUsers.find(u => u.name === savedNick);
         if (found) {
-            if (!currentUser || currentUser.name !== found.name) {
-                currentUser = found;
-                updateUI();
-                initChat(); 
-            } else {
-                currentUser = found;
-                updateUI();
-            }
+            currentUser = found;
+            updateUI();
+            initChat(); 
         }
     } else {
         currentUser = null;
@@ -64,7 +51,6 @@ onValue(ref(db, 'users'), (snapshot) => {
     }
 });
 
-// --- ДВИЖОК ЧАТА ---
 function initChat() {
     listenToGlobalChat();
     if (currentUser && catUsers.includes(currentUser.name)) listenToCatsChat();
@@ -78,7 +64,7 @@ function getPmRoomId(user1, user2) {
 function listenToGlobalChat() {
     onValue(query(ref(db, 'messages'), limitToLast(50)), (snapshot) => {
         globalMessages = snapshot.val() || {};
-        if (currentChatTab === 'global') renderChat(globalMessages);
+        if (currentChatTab === 'global') window.renderChat(globalMessages);
         renderChatTabs();
     });
 }
@@ -86,16 +72,15 @@ function listenToGlobalChat() {
 function listenToCatsChat() {
     onValue(query(ref(db, 'cat_messages'), limitToLast(50)), (snapshot) => {
         catMessages = snapshot.val() || {};
-        if (currentChatTab === 'cats') renderChat(catMessages);
+        if (currentChatTab === 'cats') window.renderChat(catMessages);
         renderChatTabs();
     });
 }
 
 function listenToPrivateMessages(targetUser) {
     if (!currentUser || activePmListeners[targetUser]) return; 
-    if (!privateMessages[targetUser]) privateMessages[targetUser] = {};
-
     const roomId = getPmRoomId(currentUser.name, targetUser);
+    
     activePmListeners[targetUser] = onValue(query(ref(db, `pms/${roomId}`), limitToLast(50)), (snapshot) => {
         const msgs = snapshot.val() || {};
         privateMessages[targetUser] = msgs;
@@ -103,16 +88,15 @@ function listenToPrivateMessages(targetUser) {
             const lastMsg = Object.values(msgs).sort((a,b) => b.time - a.time)[0];
             if (lastMsg.u !== currentUser.name && currentChatTab !== `pm_${targetUser}`) {
                 unreadPms.add(targetUser);
-                notify(`Сообщение от ${targetUser}`);
+                window.notify(`Сообщение от ${targetUser}`);
             }
         }
         renderChatTabs();
-        if (currentChatTab === `pm_${targetUser}`) renderChat(msgs, true, targetUser);
+        if (currentChatTab === `pm_${targetUser}`) window.renderChat(msgs, true, targetUser);
     });
 }
 
 function listenToPmList() {
-    if (!currentUser) return;
     onValue(ref(db, `user_pms/${currentUser.name}`), (snapshot) => {
         const data = snapshot.val() || {};
         Object.keys(data).forEach(partner => {
@@ -122,10 +106,10 @@ function listenToPmList() {
     });
 }
 
-// Делаем функции переключения чатов глобальными
+// --- ГЛОБАЛЬНЫЕ ФУНКЦИИ (Экспортируем в window) ---
+
 window.switchChat = (tabType, targetUser = null) => {
     const newTabId = tabType === 'pm' ? `pm_${targetUser}` : tabType;
-    if (currentChatTab === newTabId) return;
     currentChatTab = newTabId;
 
     if (tabType === 'pm') {
@@ -134,41 +118,26 @@ window.switchChat = (tabType, targetUser = null) => {
     }
 
     renderChatTabs();
-    if (tabType === 'global') renderChat(globalMessages);
-    else if (tabType === 'cats') {
-        if (!currentUser || !catUsers.includes(currentUser.name)) renderChatPlaceHolder("Доступ запрещен =^.^=");
-        else renderChat(catMessages);
-    } 
-    else if (tabType === 'pm') renderChat(privateMessages[targetUser] || {}, true, targetUser);
+    if (tabType === 'global') window.renderChat(globalMessages);
+    else if (tabType === 'cats') window.renderChat(catMessages);
+    else if (tabType === 'pm') window.renderChat(privateMessages[targetUser] || {}, true, targetUser);
 };
-
-// --- РЕНДЕРИНГ ---
-function renderChatTabs() {
-    const tabsBox = document.getElementById('chatTabs');
-    if (!tabsBox) return;
-    let html = `<button class="chat-tab-btn ${currentChatTab === 'global' ? 'active' : ''}" onclick="switchChat('global')">Глобальный</button>`;
-    if (currentUser && catUsers.includes(currentUser.name)) {
-        html += `<button class="chat-tab-btn tab-cats ${currentChatTab === 'cats' ? 'active' : ''}" onclick="switchChat('cats')">Чат Котиков <3</button>`;
-    }
-    Object.keys(privateMessages).forEach(withUser => {
-        const isActive = currentChatTab === `pm_${withUser}`;
-        html += `<button class="chat-tab-btn tab-pm ${isActive ? 'active' : ''} ${unreadPms.has(withUser) && !isActive ? 'has-unread' : ''}" onclick="switchChat('pm', '${withUser}')"><i class="fas fa-envelope"></i> ${withUser}</button>`;
-    });
-    tabsBox.innerHTML = html;
-}
 
 window.renderChat = (messagesObj, isPm = false, pmPartner = null) => {
     const box = document.getElementById('chatMessages');
     const msgs = Object.entries(messagesObj || {}).map(([id, data]) => ({ id, ...data }));
+    
     if (msgs.length === 0) {
-        box.innerHTML = `<div class="chat-placeholder">${isPm ? 'Напишите первое сообщение...' : 'Сообщений нет'}</div>`;
+        box.innerHTML = `<div class="chat-placeholder">${isPm ? 'Напишите сообщение...' : 'Сообщений нет'}</div>`;
         return;
     }
+
     box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => {
         const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const userRole = isPm ? 'user' : (m.r || 'user');
+        const userRole = m.r || 'user';
         const badge = isPm ? '' : `<span class="badge badge-${userRole}">${userRole.toUpperCase()}</span>`;
-        const authorClick = (currentUser && m.u !== currentUser.name) ? `onclick="openUserMenu('${m.u}', event)"` : ''; // Вызов меню
+        const authorClick = (currentUser && m.u !== currentUser.name) ? `onclick="window.openUserMenu('${m.u}', event)"` : '';
+
         return `
             <div class="msg ${currentUser && m.u === currentUser.name ? 'msg-me' : ''}">
                 <div class="msg-header">
@@ -182,88 +151,58 @@ window.renderChat = (messagesObj, isPm = false, pmPartner = null) => {
     box.scrollTop = box.scrollHeight;
 };
 
-// --- КОНТЕКСТНОЕ МЕНЮ (ИСПРАВЛЕНО) ---
 window.openUserMenu = (userName, event) => {
-    event.preventDefault();
-    event.stopPropagation(); // Останавливаем всплытие, чтобы документ не закрыл меню сразу
-    
+    event.stopPropagation();
     selectedUserForMenu = userName;
     const menu = document.getElementById('userContextMenu');
     document.getElementById('menuUserName').innerText = userName;
-    
     menu.style.display = 'block';
-    menu.style.position = 'fixed'; // Используем fixed для надежности
     menu.style.left = event.clientX + 'px';
     menu.style.top = event.clientY + 'px';
+    menu.style.position = 'fixed'; // Гарантирует, что меню будет поверх всего
 };
 
 window.menuStartPm = () => {
     if (selectedUserForMenu) {
-        switchChat('pm', selectedUserForMenu);
+        window.switchChat('pm', selectedUserForMenu);
         document.getElementById('userContextMenu').style.display = 'none';
     }
 };
 
-document.addEventListener('click', (e) => {
-    const menu = document.getElementById('userContextMenu');
-    if (menu && !menu.contains(e.target)) menu.style.display = 'none'; // Закрытие при клике мимо
-});
-
-// --- ОСТАЛЬНЫЕ ФУНКЦИИ ---
 window.sendChatMessage = () => {
     const inp = document.getElementById('chatInput');
     const text = inp.value.trim();
     if (!currentUser || !text) return;
+
     const msg = { u: currentUser.name, r: currentUser.role, t: text, time: Date.now() };
+
     if (currentChatTab === 'global') push(ref(db, 'messages'), msg);
     else if (currentChatTab === 'cats') push(ref(db, 'cat_messages'), msg);
     else if (currentChatTab.startsWith('pm_')) {
         const target = currentChatTab.replace('pm_', '');
-        push(ref(db, `pms/${getPmRoomId(currentUser.name, target)}`), { u: currentUser.name, t: text, time: Date.now() });
+        const roomId = getPmRoomId(currentUser.name, target);
+        push(ref(db, `pms/${roomId}`), { u: currentUser.name, t: text, time: Date.now() });
         update(ref(db, `user_pms/${currentUser.name}/${target}`), { last_time: Date.now() });
         update(ref(db, `user_pms/${target}/${currentUser.name}`), { last_time: Date.now() });
     }
     inp.value = '';
 };
 
-function renderChatPlaceHolder(text) {
-    document.getElementById('chatMessages').innerHTML = `<div class="chat-placeholder">${text}</div>`;
-}
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 
-window.logout = () => {
-    localStorage.removeItem('hurus_session');
-    location.reload();
-};
-
-window.handleAuth = async () => {
-    const l = document.getElementById('authLogin').value.trim();
-    const p = document.getElementById('authPass').value.trim();
-    if (!l || !p) return notify("Заполните поля!");
-    if (authMode === 'login') {
-        const found = allUsers.find(u => u.name === l && u.pass === p);
-        if (!found) return notify("Ошибка входа!");
-        localStorage.setItem('hurus_session', found.name);
-    } else {
-        if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
-        await push(ref(db, 'users'), { name: l, pass: p, balance: 0, role: 'user' });
-        localStorage.setItem('hurus_session', l);
+function renderChatTabs() {
+    const tabsBox = document.getElementById('chatTabs');
+    if (!tabsBox) return;
+    let html = `<button class="chat-tab-btn ${currentChatTab === 'global' ? 'active' : ''}" onclick="window.switchChat('global')">Глобальный</button>`;
+    if (currentUser && catUsers.includes(currentUser.name)) {
+        html += `<button class="chat-tab-btn tab-cats ${currentChatTab === 'cats' ? 'active' : ''}" onclick="window.switchChat('cats')">Коты</button>`;
     }
-    location.reload();
-};
-
-window.setAuthMode = (mode) => {
-    authMode = mode;
-    document.getElementById('tab-login').classList.toggle('active', mode === 'login');
-    document.getElementById('tab-reg').classList.toggle('active', mode === 'reg');
-};
-
-window.showSection = (id) => {
-    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('.main-nav button').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.getElementById(`nav-${id}`) || document.getElementById('adminLink');
-    if(activeBtn) activeBtn.classList.add('active');
-};
+    Object.keys(privateMessages).forEach(withUser => {
+        const isActive = currentChatTab === `pm_${withUser}`;
+        html += `<button class="chat-tab-btn tab-pm ${isActive ? 'active' : ''} ${unreadPms.has(withUser) ? 'has-unread' : ''}" onclick="window.switchChat('pm', '${withUser}')">${withUser}</button>`;
+    });
+    tabsBox.innerHTML = html;
+}
 
 function updateUI() {
     const zone = document.getElementById('authZone');
@@ -272,18 +211,20 @@ function updateUI() {
     if (currentUser) {
         zone.innerHTML = `
             <div class="profile-info-block">
-                <div class="profile-avatar-placeholder"><i class="fas fa-user"></i></div>
-                <div class="profile-text-data">
-                    <div class="profile-nick">${currentUser.name}</div>
-                    <div class="profile-balance">${currentUser.balance || 0} ₽</div>
-                </div>
-                <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+                <div class="profile-nick">${currentUser.name}</div>
+                <div class="profile-balance">${currentUser.balance || 0} ₽</div>
+                <button class="btn-logout" onclick="window.logout()">×</button>
             </div>`;
     } else {
-        zone.innerHTML = `<button class="btn btn-primary" onclick="openModal('authModal')">ВОЙТИ</button>`;
+        zone.innerHTML = `<button class="btn btn-primary" onclick="window.openModal('authModal')">ВОЙТИ</button>`;
     }
 }
 
+function renderChatPlaceHolder(text) {
+    document.getElementById('chatMessages').innerHTML = `<div class="chat-placeholder">${text}</div>`;
+}
+
+// Глобальные хэндлеры модалок и уведомлений
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
 window.closeModal = () => document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
 window.notify = (t) => {
@@ -291,3 +232,26 @@ window.notify = (t) => {
     toast.innerText = t; toast.style.display = 'block';
     setTimeout(() => toast.style.display = 'none', 3000);
 };
+window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
+window.showSection = (id) => {
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+};
+window.setAuthMode = (m) => authMode = m;
+window.handleAuth = async () => {
+    const l = document.getElementById('authLogin').value.trim();
+    const p = document.getElementById('authPass').value.trim();
+    if (authMode === 'login') {
+        const found = allUsers.find(u => u.name === l && u.pass === p);
+        if (found) { localStorage.setItem('hurus_session', found.name); location.reload(); }
+        else window.notify("Ошибка!");
+    } else {
+        await push(ref(db, 'users'), { name: l, pass: p, balance: 0, role: 'user' });
+        localStorage.setItem('hurus_session', l); location.reload();
+    }
+};
+
+document.addEventListener('click', () => {
+    const menu = document.getElementById('userContextMenu');
+    if (menu) menu.style.display = 'none';
+});
