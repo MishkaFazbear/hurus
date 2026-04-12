@@ -3,166 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HuRuS Project | Premium Gaming</title>
+    <title>HuRuS Project | Official</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-    <div class="bg-glow"></div>
+<div class="glow-bg"></div>
 
-    <header>
-        <div class="container header-wrap">
-            <div class="logo" onclick="showSection('home')">HuRuS<span>PROJECT</span></div>
-            <nav>
-                <button onclick="showSection('home')" id="nav-home" class="active"><i class="fa-solid fa-server"></i> Сервера</button>
-                <button onclick="showSection('cases')" id="nav-cases"><i class="fa-solid fa-box-open"></i> Кейсы</button>
-                <button onclick="showSection('shop')" id="nav-shop"><i class="fa-solid fa-cart-shopping"></i> Донат</button>
-                <button onclick="showSection('admin')" id="adminLink" style="display: none;"><i class="fa-solid fa-shield-halved"></i> Staff</button>
-            </nav>
-            <div id="authZone">
-                <button class="btn btn-primary" onclick="openModal('authModal')">Войти</button>
-            </div>
-        </div>
-    </header>
-
-    <main class="container main-grid">
-        <section class="content">
-            
-            <div id="home" class="page-section active">
-                <h1 class="section-title">Игровые миры</h1>
-                <div class="grid-servers">
-                    <div class="server-card">
-                        <div class="server-img mirage"></div>
-                        <div class="server-info">
-                            <h3>MIRAGE ONLY #1</h3>
-                            <div class="online-bar"><div style="width: 60%"></div></div>
-                            <span>12 / 20 игроков</span>
-                        </div>
-                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
-                    <div class="server-card">
-                        <div class="server-img awp"></div>
-                        <div class="server-info">
-                            <h3>AWP LEGO #1</h3>
-                            <div class="online-bar"><div style="width: 40%"></div></div>
-                            <span>8 / 16 игроков</span>
-                        </div>
-                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
-                    <div class="server-card">
-                        <div class="server-img surf"></div>
-                        <div class="server-info">
-                            <h3>SURF + BHOP</h3>
-                            <div class="online-bar"><div style="width: 85%"></div></div>
-                            <span>28 / 32 игроков</span>
-                        </div>
-                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
-                    <div class="server-card">
-                        <div class="server-img maniac"></div>
-                        <div class="server-info">
-                            <h3>MANIAC MODE</h3>
-                            <div class="online-bar"><div style="width: 10%"></div></div>
-                            <span>2 / 20 игроков</span>
-                        </div>
-                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="cases" class="page-section">
-                <h1 class="section-title">Испытай удачу</h1>
-                <div class="case-box card">
-                    <div class="case-header">
-                        <img src="https://pngimg.com/uploads/csgo_case/csgo_case_PNG18.png" width="150">
-                        <div>
-                            <h2>PREMIUM CASE</h2>
-                            <p>Шанс на нож 15%</p>
-                        </div>
-                    </div>
-                    <div id="caseDisplay" class="case-roll">?</div>
-                    <button class="btn btn-primary w-100 open-btn" onclick="openCase()">ОТКРЫТЬ ЗА 50 ₽</button>
-                    <div id="inventory" class="inventory-grid"></div>
-                </div>
-            </div>
-
-            <div id="shop" class="page-section">
-                <h1 class="section-title">Магазин привилегий</h1>
-                <div class="shop-grid">
-                    <div class="shop-card">
-                        <div class="rank-icon gold">VIP</div>
-                        <h3>VIP Статус</h3>
-                        <ul>
-                            <li><i class="fa-solid fa-check"></i> Тэг в чате</li>
-                            <li><i class="fa-solid fa-check"></i> Скины на оружие</li>
-                        </ul>
-                        <div class="price">199 ₽ <span>/ мес</span></div>
-                        <button class="btn btn-primary w-100">Купить</button>
-                    </div>
-                    <div class="shop-card premium">
-                        <div class="rank-icon diamond">MVP</div>
-                        <h3>PREMIUM</h3>
-                        <ul>
-                            <li><i class="fa-solid fa-check"></i> Всё от VIP</li>
-                            <li><i class="fa-solid fa-check"></i> Админ-меню (lite)</li>
-                        </ul>
-                        <div class="price">499 ₽ <span>/ мес</span></div>
-                        <button class="btn btn-primary w-100">Купить</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="admin" class="page-section">
-                <h1 class="section-title text-danger">Staff Panel</h1>
-                <div class="card admin-card">
-                    <table class="admin-table">
-                        <thead>
-                            <tr><th>Игрок</th><th>Баланс</th><th>Действия</th><th>Роль</th></tr>
-                        </thead>
-                        <tbody id="adminUserList"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <aside class="sidebar">
-            <div class="chat-wrapper">
-                <div class="chat-header"><i class="fa-solid fa-comments"></i> LIVE CHAT</div>
-                <div id="chatMessages" class="chat-body"></div>
-                <div class="chat-footer">
-                    <input type="text" id="chatInput" placeholder="Написать в чат...">
-                    <button onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
-                </div>
-            </div>
-
-            <div class="discord-widget">
-                <iframe src="https://discord.com/widget?id=1488656291705524355&theme=dark" width="100%" height="400" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
-            </div>
-        </aside>
-    </main>
-
-    <div id="authModal" class="modal-overlay" onclick="if(event.target == this) closeModal()">
-        <div class="modal-card">
-            <div class="modal-tabs">
-                <button id="tab-login" class="active" onclick="setAuthMode('login')">Вход</button>
-                <button id="tab-reg" onclick="setAuthMode('reg')">Регистрация</button>
-            </div>
-            <div class="modal-form">
-                <div class="input-group">
-                    <i class="fa-solid fa-user"></i>
-                    <input type="text" id="authLogin" placeholder="Никнейм">
-                </div>
-                <div class="input-group">
-                    <i class="fa-solid fa-lock"></i>
-                    <input type="password" id="authPass" placeholder="Пароль">
-                </div>
-                <button class="btn btn-primary w-100" onclick="handleAuth()">Войти в аккаунт</button>
-            </div>
+<header>
+    <div class="container header-flex">
+        <div class="logo" onclick="showSection('home')">HuRuS<span>PROJECT</span></div>
+        <nav>
+            <button onclick="showSection('home')" id="nav-home" class="active">СЕРВЕРА</button>
+            <button onclick="showSection('cases')" id="nav-cases">КЕЙСЫ</button>
+            <button onclick="showSection('shop')" id="nav-shop">МАГАЗИН</button>
+            <button onclick="showSection('admin')" id="adminLink" style="display: none;">STAFF ПАНЕЛЬ</button>
+        </nav>
+        <div id="authZone">
+            <button class="btn btn-main" onclick="openModal('authModal')">ВОЙТИ</button>
         </div>
     </div>
+</header>
 
-    <div id="toast"></div>
-    <script type="module" src="script.js"></script>
+<main class="container main-layout">
+    <section class="content-area">
+        
+        <div id="home" class="page-section active">
+            <h2 class="section-title">Игровые миры</h2>
+            <div class="server-grid">
+                <div class="server-card">
+                    <img src="https://i.ytimg.com/vi/j3_Yv68iPkw/maxresdefault.jpg" alt="Mirage">
+                    <div class="server-info">
+                        <h3>MIRAGE ONLY #1</h3>
+                        <div class="progress-bg"><div class="progress-bar" style="width: 85%"></div></div>
+                        <p>17 / 20 игроков</p>
+                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
+                    </div>
+                </div>
+                <div class="server-card">
+                    <img src="https://img.youtube.com/vi/6f_S_v96YtM/maxresdefault.jpg" alt="AWP">
+                    <div class="server-info">
+                        <h3>AWP LEGO #1</h3>
+                        <div class="progress-bg"><div class="progress-bar" style="width: 50%"></div></div>
+                        <p>8 / 16 игроков</p>
+                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
+                    </div>
+                </div>
+                <div class="server-card">
+                    <img src="https://i.ytimg.com/vi/1X9_p-7M7G4/maxresdefault.jpg" alt="Surf">
+                    <div class="server-info">
+                        <h3>SURF + BHOP</h3>
+                        <div class="progress-bg"><div class="progress-bar" style="width: 90%"></div></div>
+                        <p>28 / 32 игроков</p>
+                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
+                    </div>
+                </div>
+                <div class="server-card">
+                    <img src="https://i.ytimg.com/vi/q_7n6E_h2Yw/maxresdefault.jpg" alt="Maniac">
+                    <div class="server-info">
+                        <h3>MANIAC MODE</h3>
+                        <div class="progress-bg"><div class="progress-bar" style="width: 10%"></div></div>
+                        <p>2 / 20 игроков</p>
+                        <button class="btn-connect">ПОДКЛЮЧИТЬСЯ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="cases" class="page-section">
+            <h2 class="section-title">Испытай удачу</h2>
+            <div class="case-card">
+                <div class="case-visual">
+                    <img src="https://pngimg.com/uploads/csgo_case/csgo_case_PNG18.png" alt="Case">
+                    <div class="case-info">
+                        <h3>PREMIUM CASE</h3>
+                        <p>Шанс на нож 15%</p>
+                        <div id="caseDisplay" class="case-res">?</div>
+                        <button class="btn btn-main" onclick="openCase()">ОТКРЫТЬ ЗА 50 ₽</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="shop" class="page-section">
+            <h2 class="section-title">Магазин привилегий</h2>
+            <div class="shop-grid">
+                <div class="shop-card">
+                    <h4>VIP</h4>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Тэг [VIP]</li>
+                        <li><i class="fas fa-check"></i> Скины на оружие</li>
+                    </ul>
+                    <div class="price">199 ₽ <span>/мес</span></div>
+                    <button class="btn btn-shop">Купить</button>
+                </div>
+                <div class="shop-card gold">
+                    <div class="hot-badge">POPULAR</div>
+                    <h4>PREMIUM</h4>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Всё от VIP</li>
+                        <li><i class="fas fa-check"></i> Админ-меню (lite)</li>
+                        <li><i class="fas fa-check"></i> Резервный слот</li>
+                    </ul>
+                    <div class="price">499 ₽ <span>/мес</span></div>
+                    <button class="btn btn-shop">Купить</button>
+                </div>
+                <div class="shop-card diamond">
+                    <h4>ELITE</h4>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Всё от PREMIUM</li>
+                        <li><i class="fas fa-check"></i> Иммунитет к бану</li>
+                        <li><i class="fas fa-check"></i> Паутинка (hook)</li>
+                    </ul>
+                    <div class="price">999 ₽ <span>/мес</span></div>
+                    <button class="btn btn-shop">Купить</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin" class="page-section">
+            <h2 class="section-title" style="color:#ff4d4d">Управление персоналом</h2>
+            <div class="admin-panel">
+                <table class="staff-table">
+                    <thead>
+                        <tr>
+                            <th>Игрок</th>
+                            <th>Баланс</th>
+                            <th>Действия</th>
+                            <th>Роль</th>
+                            <th>Сменить роль</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminUserList"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <aside class="sidebar">
+        <div class="chat-container">
+            <div class="chat-header"><i class="fas fa-comments"></i> LIVE CHAT</div>
+            <div id="chatMessages" class="chat-body"></div>
+            <div class="chat-footer">
+                <input type="text" id="chatInput" placeholder="Написать...">
+                <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+        <div class="discord-widget">
+            <iframe src="https://discord.com/widget?id=1488656291705524355&theme=dark" width="100%" height="400" allowtransparency="true" frameborder="0"></iframe>
+        </div>
+    </aside>
+</main>
+
+<div id="authModal" class="modal-overlay" onclick="if(event.target == this) closeModal()">
+    <div class="modal-box">
+        <div class="modal-tabs">
+            <button id="tab-login" class="active" onclick="setAuthMode('login')">ВХОД</button>
+            <button id="tab-reg" onclick="setAuthMode('reg')">РЕГИСТРАЦИЯ</button>
+        </div>
+        <div class="modal-form">
+            <input type="text" id="authLogin" placeholder="Никнейм">
+            <input type="password" id="authPass" placeholder="Пароль">
+            <button class="btn btn-main w-100" onclick="handleAuth()">ПРОДОЛЖИТЬ</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+<script type="module" src="script.js"></script>
 </body>
 </html>
