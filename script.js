@@ -17,14 +17,24 @@ const db = getDatabase(app);
 
 let currentUser = null;
 let allUsers = [];
-let authMode = 'login'; // По умолчанию режим входа
+let authMode = 'login';
 let activeReactMsgId = null; 
+
+// --- 1. ОБРАБОТКА ВОЗВРАТА ИЗ STEAM (ИСПРАВЛЕНО) ---
+const urlParams = new URLSearchParams(window.location.search);
+const steamNick = urlParams.get('nickname') || urlParams.get('name'); // Бэкенд обычно шлет один из этих параметров
+if (steamNick) {
+    localStorage.setItem('hurus_session', steamNick);
+    // Очищаем URL от параметров, чтобы не "логиниться" вечно при перезагрузке
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
 
 // --- СИНХРОНИЗАЦИЯ ---
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        allUsers = data.users ? Object.entries(data.users).map(([key, val]) => ({ uid: key, ...val })) : [];
+        // ИСПРАВЛЕНО: Сохраняем ключи (uid), чтобы админка работала
+        allUsers = data.users ? Object.entries(data.users).map(([id, val]) => ({ uid: id, ...val })) : [];
         renderChat(data.messages || {});
         
         const savedNick = localStorage.getItem('hurus_session');
@@ -51,13 +61,14 @@ function renderChat(messagesObj) {
         if (m.reactions) {
             reactHtml = Object.entries(m.reactions).map(([emoji, users]) => {
                 const userList = Object.keys(users);
-                const names = userList.join(', ');
+                const count = userList.length;
                 const hasMyReact = currentUser && users[currentUser.name] ? 'active' : '';
+                const names = userList.join(', ');
 
                 return `
                     <div class="react-item ${hasMyReact}" onclick="toggleReaction('${m.id}', '${emoji}')" title="${names}">
                         <span class="react-emoji">${emoji}</span>
-                        <span class="react-count">${userList.length}</span>
+                        <span class="react-count">${count}</span>
                     </div>
                 `;
             }).join('');
@@ -96,18 +107,13 @@ window.toggleReaction = async (msgId, emoji) => {
 window.sendChatMessage = () => {
     const inp = document.getElementById('chatInput');
     if (!currentUser || !inp.value.trim()) return;
-    push(ref(db, 'messages'), {
-        u: currentUser.name,
-        r: currentUser.role,
-        t: inp.value,
-        time: Date.now()
-    });
+    push(ref(db, 'messages'), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
     inp.value = '';
 };
 
-// --- АВТОРИЗАЦИЯ (ИСПРАВЛЕНО) ---
+// --- АВТОРИЗАЦИЯ И ПРОФИЛЬ ---
 
-// ТА САМАЯ ФУНКЦИЯ, КОТОРОЙ НЕ ХВАТАЛО
+// ИСПРАВЛЕНО: Функция переключения вкладок (была в HTML, но не в JS)
 window.setAuthMode = (mode) => {
     authMode = mode;
     document.getElementById('tab-login').classList.toggle('active', mode === 'login');
@@ -123,28 +129,23 @@ window.handleAuth = async () => {
 
     if (authMode === 'login') {
         const found = allUsers.find(u => u.name === l && u.pass === p);
-        if (!found) return notify("Неверный логин или пароль!");
+        if (!found) return notify("Ошибка входа!");
         localStorage.setItem('hurus_session', found.name);
-        location.reload();
     } else {
-        const found = allUsers.find(u => u.name === l);
-        if (found) return notify("Никнейм занят!");
+        if (allUsers.find(u => u.name === l)) return notify("Ник занят!");
         await push(ref(db, 'users'), { name: l, pass: p, balance: 0, role: 'user', avatar: '' });
         localStorage.setItem('hurus_session', l);
-        location.reload();
     }
+    location.reload();
 };
 
-// ТВОЙ ОРИГИНАЛЬНЫЙ STEAM (БЕЗ ИЗМЕНЕНИЙ)
-window.loginWithSteam = () => {
-    window.location.href = "https://hurus-backend.onrender.com/auth/steam";
-};
-
+window.loginWithSteam = () => window.location.href = "https://hurus-backend.onrender.com/auth/steam";
 window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
 
 function updateUI() {
     const isAdmin = ['admin', 'moder'].includes(currentUser.role);
     document.getElementById('adminLink').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('clearChatBtn').style.display = isAdmin ? 'block' : 'none';
     
     document.getElementById('authZone').innerHTML = `
         <div class="profile-info-block">
@@ -175,7 +176,7 @@ window.renderAdmin = () => {
                     <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                 </select>
             </td>
-            <td><button class="btn-del" onclick="deleteUser('${u.uid}')">Удалить</button></td>
+            <td><button class="btn-del" onclick="deleteUser('${u.uid}')"><i class="fas fa-trash"></i></button></td>
         </tr>
     `).join('');
 };
@@ -193,6 +194,10 @@ window.deleteUser = (uid) => {
     if (confirm("Удалить пользователя?")) remove(ref(db, `users/${uid}`));
 };
 
+window.clearChat = () => {
+    if (confirm("Очистить чат?")) set(ref(db, 'messages'), null);
+};
+
 // --- ВСПОМОГАТЕЛЬНОЕ ---
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -208,12 +213,13 @@ window.notify = (t) => {
     setTimeout(() => toast.style.display = 'none', 3000);
 };
 
-// Логика эмодзи (твоя оригинальная)
+// Логика пикера эмодзи
 document.addEventListener('DOMContentLoaded', () => {
     const globalPicker = document.getElementById('global-emoji-picker');
     const pickerElement = document.querySelector('emoji-picker');
     window.openEmojiPicker = (msgId, event) => {
         event.stopPropagation();
+        if (!currentUser) return notify("Сначала войдите!");
         activeReactMsgId = msgId;
         globalPicker.style.display = 'block';
         const rect = event.currentTarget.getBoundingClientRect();
