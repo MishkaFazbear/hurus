@@ -38,41 +38,20 @@
                         <h3>MIRAGE ONLY #1</h3>
                         <div class="progress-bg"><div class="progress-bar" style="width: 85%"></div></div>
                         <p>17 / 20 игроков</p>
-                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
+                        <button class="btn btn-connect w-100" style="background:var(--primary-grad); color:#fff; border:none; padding:10px; border-radius:8px; cursor:pointer;">ПОДКЛЮЧИТЬСЯ</button>
                     </div>
                 </div>
-                <div class="server-card">
-                    <img src="https://daddyskins.com/blog/wp-content/uploads/2024/09/cs2-inferno-callouts.webp" alt="Inferno">
-                    <div class="server-info">
-                        <h3>INFERNO CLASSIC</h3>
-                        <div class="progress-bg"><div class="progress-bar" style="width: 40%"></div></div>
-                        <p>8 / 20 игроков</p>
-                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
                 </div>
-                <div class="server-card">
-                    <img src="https://cloud.cybershoke.net/img/maps/2/de_overpass.jpg" alt="Overpass">
-                    <div class="server-info">
-                        <h3>OVERPASS RETAKE</h3>
-                        <div class="progress-bg"><div class="progress-bar" style="width: 65%"></div></div>
-                        <p>13 / 20 игроков</p>
-                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
-                </div>
-                <div class="server-card">
-                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTK4bQmqhlfqFF4GSggiPigqtAuvb9CCC8Wcg&s" alt="Nuke">
-                    <div class="server-info">
-                        <h3>NUKE 24/7</h3>
-                        <div class="progress-bg"><div class="progress-bar" style="width: 20%"></div></div>
-                        <p>4 / 20 игроков</p>
-                        <button class="btn btn-connect w-100">ПОДКЛЮЧИТЬСЯ</button>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div id="admin" class="page-section">
             <h1 class="section-title" style="color:var(--danger)">Панель управления</h1>
+            
+            <div class="admin-search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" id="userSearch" placeholder="Поиск игрока по никнейму..." oninput="renderAdmin()">
+            </div>
+
             <div class="card" style="overflow-x: auto; margin-bottom: 20px;">
                 <table class="staff-table">
                     <thead>
@@ -89,8 +68,7 @@
             </div>
         
             <h3 style="margin-bottom:15px">Последние действия</h3>
-            <div class="card" id="adminLogs" style="height: 300px; overflow-y: auto; background: #000; border-color: #333;">
-                </div>
+            <div class="card" id="adminLogs" style="height: 300px; overflow-y: auto; background: #000; border-color: #333;"></div>
         </div>
         
         <div id="shop" class="page-section">
@@ -101,24 +79,6 @@
                     <div class="shop-icon"><i class="fas fa-crown"></i></div>
                     <h3>VIP STATUS</h3>
                     <div class="shop-price">199 <span>₽/мес</span></div>
-                    <ul class="shop-features">
-                        <li><i class="fas fa-check"></i> Тэг [VIP] в чате</li>
-                        <li><i class="fas fa-check"></i> Доступ к скинам !ws</li>
-                        <li><i class="fas fa-check"></i> Резервный слот</li>
-                    </ul>
-                    <button class="btn-buy" onclick="notify('В разработке...')">КУПИТЬ</button>
-                </div>
-
-                <div class="shop-item premium">
-                    <div class="shop-badge">GOLD</div>
-                    <div class="shop-icon"><i class="fas fa-star"></i></div>
-                    <h3>PREMIUM</h3>
-                    <div class="shop-price">499 <span>₽/мес</span></div>
-                    <ul class="shop-features">
-                        <li><i class="fas fa-check"></i> Тэг [PREMIUM]</li>
-                        <li><i class="fas fa-check"></i> Модели агентов</li>
-                        <li><i class="fas fa-check"></i> Lite Админка</li>
-                    </ul>
                     <button class="btn-buy" onclick="notify('В разработке...')">КУПИТЬ</button>
                 </div>
             </div>
@@ -127,9 +87,7 @@
 
     <aside class="sidebar">
         <div class="chat-wrapper">
-            <div class="chat-header" id="chatTabs">
-                <button id="tab-global" class="active" onclick="switchChat('global')">Глобальный</button>
-            </div>
+            <div class="chat-header" id="chatTabs"></div>
             
             <div id="chatMessages" class="chat-body"></div>
             
@@ -150,13 +108,7 @@
         <div class="modal-form">
             <div class="input-field"><i class="fas fa-user"></i><input type="text" id="authLogin" placeholder="Никнейм"></div>
             <div class="input-field"><i class="fas fa-lock"></i><input type="password" id="authPass" placeholder="Пароль"></div>
-            <button class="btn btn-primary w-100" onclick="handleAuth()">ВЫПОЛНИТЬ</button>
-            
-            <div class="auth-divider"><span>ИЛИ</span></div>
-            
-            <button class="btn btn-steam w-100" onclick="loginWithSteam()">
-                <i class="fab fa-steam"></i> ВОЙТИ ЧЕРЕЗ STEAM
-            </button>
+            <button class="btn btn-primary w-100" style="width:100%" onclick="handleAuth()">ВЫПОЛНИТЬ</button>
         </div>
     </div>
 </div>
