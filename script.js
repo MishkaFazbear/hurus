@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update, push, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, onValue, update, push, remove, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyA7j4u6K3HlgRWULMP0KAOUbjIHAuv5K6s",
@@ -35,30 +35,47 @@ if (steamNick) {
     window.history.replaceState({}, document.title, window.location.pathname);
 }
 
-// --- СИНХРОНИЗАЦИЯ С БД ---
-onValue(ref(db, '/'), (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        allUsers = data.users ? Object.entries(data.users).map(([id, val]) => ({ uid: id, ...val })) : [];
-        allLogs = data.logs ? Object.values(data.logs).sort((a, b) => b.time - a.time) : [];
-        
-        globalMessages = data.messages || {};
-        catMessages = data.cat_messages || {};
-        
-        renderChat(currentChatTab === 'global' ? globalMessages : catMessages);
-        
-        const savedNick = localStorage.getItem('hurus_session');
-        if (savedNick) {
-            const found = allUsers.find(u => u.name === savedNick);
-            if (found) {
-                currentUser = found;
-                updateUI();
-            }
+// --- СИНХРОНИЗАЦИЯ ПОЛЬЗОВАТЕЛЕЙ ---
+onValue(ref(db, 'users'), (snapshot) => {
+    const data = snapshot.val() || {};
+    allUsers = Object.entries(data).map(([id, val]) => ({ uid: id, ...val }));
+    
+    const savedNick = localStorage.getItem('hurus_session');
+    if (savedNick) {
+        const found = allUsers.find(u => u.name === savedNick);
+        if (found) {
+            currentUser = found;
+            updateUI();
         }
-        
-        if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) {
-            renderAdmin();
-        }
+    }
+    
+    if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) {
+        renderAdmin();
+    }
+});
+
+// --- СИНХРОНИЗАЦИЯ ГЛОБАЛЬНОГО ЧАТА (только последние 50 сообщений) ---
+const globalChatQuery = query(ref(db, 'messages'), limitToLast(50));
+onValue(globalChatQuery, (snapshot) => {
+    globalMessages = snapshot.val() || {};
+    if (currentChatTab === 'global') renderChat(globalMessages);
+});
+
+// --- СИНХРОНИЗАЦИЯ ЧАТА КОТИКОВ (только последние 50 сообщений) ---
+const catChatQuery = query(ref(db, 'cat_messages'), limitToLast(50));
+onValue(catChatQuery, (snapshot) => {
+    catMessages = snapshot.val() || {};
+    if (currentChatTab === 'cats') renderChat(catMessages);
+});
+
+// --- СИНХРОНИЗАЦИЯ ЛОГОВ (только последние 50 логов) ---
+const logsQuery = query(ref(db, 'logs'), limitToLast(50));
+onValue(logsQuery, (snapshot) => {
+    const data = snapshot.val() || {};
+    allLogs = Object.values(data).sort((a, b) => b.time - a.time);
+    
+    if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) {
+        renderLogs();
     }
 });
 
