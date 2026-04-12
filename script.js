@@ -32,21 +32,21 @@ onValue(ref(db, '/'), (snapshot) => {
     }
 });
 
-// АВТОРИЗАЦИЯ (Enter работает через HTML onkeydown)
+// АВТОРИЗАЦИЯ
 window.handleAuth = async () => {
     const l = document.getElementById('authLogin').value.trim();
     const p = document.getElementById('authPass').value.trim();
-    if (!l || !p) return notify("Заполни поля!");
+    if (!l || !p) return notify("Заполни все поля!");
 
     const isReg = document.getElementById('tab-reg').classList.contains('active');
     if (isReg) {
         if (allUsers.some(u => u.name === l)) return notify("Ник занят!");
         await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 0, role: 'user' });
-        notify("Зарегистрирован!");
+        notify("Успешная регистрация!");
         setAuthMode('login');
     } else {
         const u = allUsers.find(u => u.name === l && u.pass === p);
-        if (!u) return notify("Ошибка входа!");
+        if (!u) return notify("Неверный логин или пароль!");
         currentUser = u;
         closeModal();
         updateHeader();
@@ -61,23 +61,23 @@ function updateHeader() {
     const az = document.getElementById('authZone');
     az.innerHTML = `
         <div style="text-align:right">
-            <div style="font-weight:800">${currentUser.name}</div>
-            <div style="font-size:11px; color:var(--success)">${currentUser.balance} ₽</div>
+            <div style="font-weight:800; font-size:14px;">${currentUser.name}</div>
+            <div style="font-size:12px; color:var(--success); font-weight:bold;">${currentUser.balance} ₽</div>
         </div>
     `;
 }
 
-// STAFF ПАНЕЛЬ (Вернул все роли и систему ОК)
+// STAFF ПАНЕЛЬ
 function renderAdmin() {
     const list = document.getElementById('adminUserList');
     list.innerHTML = allUsers.map(u => `
         <tr>
-            <td>${u.name}</td>
+            <td style="font-weight:bold">${u.name}</td>
             <td>${u.balance} ₽</td>
             <td>
                 <div style="display:flex; gap:5px">
-                    <input type="number" id="amt-${u.name}" placeholder="₽" style="width:50px">
-                    <button class="btn-ok" onclick="giveBalDirect('${u.name}')">OK</button>
+                    <input type="number" id="amt-${u.name}" placeholder="₽" style="width:60px">
+                    <button class="btn-ok" onclick="giveBalDirect('${u.name}')">ОК</button>
                 </div>
             </td>
             <td>
@@ -89,7 +89,7 @@ function renderAdmin() {
                     <option value="admin" ${u.role==='admin'?'selected':''}>admin</option>
                 </select>
             </td>
-            <td><button class="btn-ok" onclick="saveRoleDirect('${u.name}')">OK</button></td>
+            <td><button class="btn-ok" onclick="saveRoleDirect('${u.name}')">ОК</button></td>
         </tr>
     `).join('');
 }
@@ -97,13 +97,17 @@ function renderAdmin() {
 window.giveBalDirect = (name) => {
     const amt = document.getElementById(`amt-${name}`).value;
     const user = allUsers.find(u => u.name === name);
-    if (amt) update(ref(db, 'users/'+name), { balance: user.balance + parseInt(amt) });
+    if (amt) {
+        update(ref(db, 'users/'+name), { balance: user.balance + parseInt(amt) });
+        document.getElementById(`amt-${name}`).value = '';
+        notify(`Выдано ${amt} ₽`);
+    }
 };
 
 window.saveRoleDirect = (name) => {
     const role = document.getElementById(`role-${name}`).value;
     update(ref(db, 'users/'+name), { role: role });
-    notify("Роль обновлена");
+    notify(`Роль обновлена на ${role}`);
 };
 
 // ЧАТ
@@ -118,37 +122,42 @@ window.sendChatMessage = () => {
 function renderChat(msgs) {
     const box = document.getElementById('chatMessages');
     box.innerHTML = msgs.sort((a,b) => a.time - b.time).map(m => `
-        <div style="margin-bottom:8px">
+        <div style="margin-bottom:2px; font-size:13px; line-height:1.4;">
             <span class="badge badge-${m.r}">${m.r}</span> 
-            <b style="color:${m.r==='moder'?'var(--moder)':'inherit'}">${m.u}:</b> ${m.t}
+            <b style="color:${m.r==='moder'?'var(--moder)': (m.r==='admin'?'var(--danger)':'inherit')}">${m.u}:</b> 
+            <span style="color:#d1d5db">${m.t}</span>
         </div>
     `).join('');
     box.scrollTop = box.scrollHeight;
 }
 
-// УТИЛИТЫ
+// УТИЛИТЫ НАВИГАЦИИ
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('.main-nav button').forEach(b => b.classList.remove('active'));
     document.getElementById('nav-'+id)?.classList.add('active');
+    if (id === 'admin') renderAdmin();
 };
+
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
 window.closeModal = () => document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
 window.setAuthMode = (m) => {
     document.getElementById('tab-login').classList.toggle('active', m === 'login');
     document.getElementById('tab-reg').classList.toggle('active', m === 'reg');
 };
+
 window.notify = (t) => {
     const toast = document.getElementById('toast');
-    toast.innerText = t; toast.style.display = 'block';
+    toast.innerText = t; 
+    toast.style.display = 'block';
     setTimeout(() => toast.style.display = 'none', 3000);
 };
 
 window.openCase = () => {
     if (!currentUser) return openModal('authModal');
-    if (currentUser.balance < 50) return notify("Мало денег!");
-    const res = ["Dragon Lore", "Knife", "Blue Skin"][Math.floor(Math.random()*3)];
+    if (currentUser.balance < 50) return notify("Недостаточно средств!");
+    const res = ["Dragon Lore", "Нож", "Ширпотреб", "Тайное"][Math.floor(Math.random()*4)];
     update(ref(db, 'users/'+currentUser.name), { balance: currentUser.balance - 50 });
     document.getElementById('caseDisplay').innerText = res;
 };
