@@ -13,9 +13,7 @@
             <div class="logo" onclick="showSection('home')">HuRuS<span>PROJECT</span></div>
             <nav>
                 <button onclick="showSection('home')" id="nav-home" class="active">Сервера</button>
-                <button onclick="showSection('tasks')" id="nav-tasks">Задания</button>
                 <button onclick="showSection('cases')" id="nav-cases">Кейсы</button>
-                <button onclick="showSection('shop')" id="nav-shop">Магазин</button>
                 <button onclick="showSection('admin')" id="adminLink" style="display: none;">Панель Staff</button>
             </nav>
             <div id="authZone">
@@ -61,9 +59,6 @@
                         <tbody id="adminUserList"></tbody>
                     </table>
                 </div>
-                <div id="wipeZone" style="display: none;">
-                    <button class="btn btn-danger" onclick="wipeDatabase()" style="margin-top: 20px;">Вайп всех игроков</button>
-                </div>
             </div>
         </section>
 
@@ -100,7 +95,6 @@
     </div>
 
     <div id="toast"></div>
-
     <script type="module" src="script.js"></script>
 </body>
 </html>

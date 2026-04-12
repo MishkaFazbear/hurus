@@ -19,13 +19,24 @@ let currentUser = null;
 let authMode = 'login';
 let allUsers = [];
 
-// СИНХРОНИЗАЦИЯ ДАННЫХ
+// СИНХРОНИЗАЦИЯ И АВТОВХОД
 onValue(ref(db, '/'), (snapshot) => {
     const data = snapshot.val();
     if (data) {
         allUsers = data.users ? Object.values(data.users) : [];
         renderChat(data.messages ? Object.values(data.messages) : []);
         
+        if (!currentUser) {
+            const savedUser = localStorage.getItem('hurus_session');
+            if (savedUser) {
+                const user = allUsers.find(u => u.name === savedUser);
+                if (user) {
+                    currentUser = user;
+                    onLogin(true);
+                }
+            }
+        }
+
         if (currentUser) {
             const myData = allUsers.find(u => u.name === currentUser.name);
             if (myData) {
@@ -46,33 +57,44 @@ window.handleAuth = async () => {
 
     if (authMode === 'reg') {
         if (allUsers.some(u => u.name.toLowerCase() === l.toLowerCase())) return notify("Ник занят!");
-        const role = l.toLowerCase() === 'мишутка фазбер' ? 'admin' : 'user';
+        
+        const admins = ['мишутка фазбер', 'sharizmound'];
+        const role = admins.includes(l.toLowerCase()) ? 'admin' : 'user';
         
         try {
             await set(ref(db, 'users/' + l), { name: l, pass: p, balance: 0, role: role, inv: [] });
-            notify("Регистрация успешна! Войди.");
+            notify("Регистрация успешна!");
             setAuthMode('login');
-        } catch (e) { notify("Ошибка базы! Проверь Rules."); }
+        } catch (e) { notify("Ошибка базы!"); }
     } else {
         const user = allUsers.find(u => u.name === l && u.pass === p);
         if (!user) return notify("Неверный вход!");
         currentUser = user;
-        onLogin();
+        localStorage.setItem('hurus_session', currentUser.name);
+        onLogin(false);
     }
 };
 
-function onLogin() {
+function onLogin(isAuto) {
     closeModal();
-    notify("Привет, " + currentUser.name);
+    if(!isAuto) notify("С возвращением!");
+    
     document.getElementById('authZone').innerHTML = `
         <div style="text-align:right; margin-right:12px">
             <div style="font-weight:800">${currentUser.name}</div>
             <div id="headerBal" style="color:var(--success); font-size:12px">${currentUser.balance} ₽</div>
         </div>
-        <button class="btn btn-sm" style="background:var(--border); color:#fff" onclick="location.reload()">Выход</button>
+        <button class="btn btn-sm" style="background:var(--border); color:#fff; cursor:pointer" onclick="logout()">Выход</button>
     `;
-    if (currentUser.role === 'admin') document.getElementById('adminLink').style.display = 'inline-block';
+    if (currentUser.role === 'admin') {
+        document.getElementById('adminLink').style.display = 'inline-block';
+    }
 }
+
+window.logout = () => {
+    localStorage.removeItem('hurus_session');
+    location.reload();
+};
 
 // ЧАТ
 window.sendChatMessage = () => {
@@ -97,18 +119,16 @@ function renderChat(msgs) {
 // АДМИНКА
 function renderAdmin() {
     const list = document.getElementById('adminUserList');
-    document.getElementById('wipeZone').style.display = currentUser.role === 'admin' ? 'block' : 'none';
-
     list.innerHTML = allUsers.map(u => `
         <tr>
             <td>${u.name}</td>
             <td>${u.balance} ₽</td>
             <td>
-                <input type="number" id="sum-${u.name}" class="admin-input-sum" style="width:50px; background:#000; color:#fff; border:1px solid var(--border)">
-                <button onclick="giveBal('${u.name}')" class="btn-sm" style="background:var(--success); color:#fff; border:none; padding:3px 7px; border-radius:4px; cursor:pointer">OK</button>
+                <input type="number" id="sum-${u.name}" style="width:50px; background:#000; color:#fff; border:1px solid var(--border)">
+                <button onclick="giveBal('${u.name}')" style="background:var(--success); color:#fff; border:none; padding:3px 7px; border-radius:4px; cursor:pointer">OK</button>
             </td>
             <td><span class="badge badge-${u.role}">${u.role}</span></td>
-            <td><button class="btn-sm" onclick="changeRole('${u.name}', 'admin')" style="font-size:10px">Сделать админом</button></td>
+            <td><button onclick="changeRole('${u.name}', 'admin')" style="font-size:10px; cursor:pointer">UP</button></td>
         </tr>
     `).join('');
 }
@@ -121,7 +141,7 @@ window.giveBal = (name) => {
 
 window.changeRole = (name, role) => update(ref(db, 'users/'+name), { role: role });
 
-// ПЕРЕКЛЮЧЕНИЕ СТРАНИЦ
+// ИНТЕРФЕЙС
 window.showSection = (id) => {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -143,24 +163,16 @@ window.notify = (t) => {
     toast.innerText = t; toast.style.display = 'block';
     setTimeout(() => toast.style.display = 'none', 3000);
 };
-window.wipeDatabase = () => { if(confirm("Удалить всех игроков?")) set(ref(db, 'users'), null); };
 
-// КЕЙСЫ
 window.openCase = () => {
     if (!currentUser) return openModal('authModal');
     if (currentUser.balance < 50) return notify("Недостаточно средств!");
-
-    const items = ["AK-47 | Neon", "AWP | Dragon", "Knife | Doppler", "Glock | Water"];
+    const items = ["AK-47", "AWP", "Knife", "Glock"];
     const win = items[Math.floor(Math.random() * items.length)];
-    
     update(ref(db, 'users/' + currentUser.name), { 
         balance: currentUser.balance - 50,
         inv: [...(currentUser.inv || []), win]
     });
-    
-    document.getElementById('caseDisplay').innerText = "ROLLING...";
-    setTimeout(() => {
-        document.getElementById('caseDisplay').innerText = win;
-        notify("Выпало: " + win);
-    }, 1000);
+    document.getElementById('caseDisplay').innerText = win;
+    notify("Выпало: " + win);
 };
