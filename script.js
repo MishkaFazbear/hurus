@@ -1,5 +1,22 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set, onValue, update, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+// Проверка, пришел ли пользователь после входа через Steam
+const urlParams = new URLSearchParams(window.location.search);
+const steamId = urlParams.get('steamid');
+const steamName = urlParams.get('name');
+
+if (steamId && steamName) {
+    // Если данные есть, создаем/входим в профиль автоматически
+    handleSteamLogin(steamId, steamName);
+    // Очищаем URL от данных для красоты
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
+
+async function handleSteamLogin(id, name) {
+    // Логика поиска пользователя в Firebase по SteamID
+    // (Аналогично твоей функции handleAuth)
+    notify(`Добро пожаловать, ${name}!`);
+}
 
 const firebaseConfig = {
     apiKey: "AIzaSyA7j4u6K3HlgRWULMP0KAOUbjIHAuv5K6s",
@@ -66,11 +83,13 @@ window.handleAuth = async () => {
 };
 
 window.loginWithSteam = () => {
+    // Адрес твоего будущего сервера, который будет обрабатывать вход
+    const backendUrl = "https://hurus-backend.onrender.com"; 
+    
     notify("Перенаправление в Steam...");
-    // Здесь должна быть ссылка на ваш backend обработчик Steam OpenID
-    setTimeout(() => {
-        alert("Для входа через Steam требуется настройка API Key на сервере.");
-    }, 500);
+    
+    // Переходим на сервер
+    window.location.href = backendUrl;
 };
 
 window.logout = () => {
