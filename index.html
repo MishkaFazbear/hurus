@@ -71,9 +71,18 @@
             </div>
         </div>
 
-
         <div id="admin" class="page-section">
             <h1 class="section-title" style="color:var(--danger)">Панель управления</h1>
+            
+            <div class="admin-stats-row" style="margin-bottom: 20px;">
+                <div class="card">
+                    <h3 style="margin-top: 0; margin-bottom: 10px;">Текущий онлайн: <span id="onlineCount" style="color: var(--success);">0</span></h3>
+                    <div id="adminOnlineUsers" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <span style="color: var(--text-dim);">Загрузка...</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="card" style="overflow-x: auto; margin-bottom: 20px;">
                 <table class="staff-table">
                     <thead>
@@ -91,8 +100,9 @@
         
             <h3 style="margin-bottom:15px">Последние действия</h3>
             <div class="card" id="adminLogs" style="height: 200px; overflow-y: auto; background: #000; border-color: #333;">
-                </div>
+            </div>
         </div>
+
         <div id="shop" class="page-section">
             <h1 class="section-title">Привилегии</h1>
             <div class="shop-grid">

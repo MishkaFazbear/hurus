@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update, push, remove, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, onValue, update, push, remove, get, query, limitToLast, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyA7j4u6K3HlgRWULMP0KAOUbjIHAuv5K6s",
@@ -27,6 +27,10 @@ let globalMessages = {};
 let catMessages = {};
 const catUsers = ['mishkafazbear', 'amonphous', 'SharizMound'];
 
+// --- ПЕРЕМЕННЫЕ ДЛЯ ОНЛАЙНА ---
+let onlineUsersList = [];
+let myOnlineRef = null;
+
 // --- 1. ОБРАБОТКА ВОЗВРАТА ИЗ STEAM ---
 const urlParams = new URLSearchParams(window.location.search);
 const steamNick = urlParams.get('nickname') || urlParams.get('name'); 
@@ -46,6 +50,7 @@ onValue(ref(db, 'users'), (snapshot) => {
         if (found) {
             currentUser = found;
             updateUI();
+            setOnlineStatus(); // Устанавливаем статус при успешной загрузке
         }
     }
     
@@ -78,6 +83,34 @@ onValue(logsQuery, (snapshot) => {
         renderLogs();
     }
 });
+
+// --- СИСТЕМА ОНЛАЙНА ---
+onValue(ref(db, 'online_users'), (snapshot) => {
+    const data = snapshot.val() || {};
+    onlineUsersList = Object.values(data).map(u => u.name);
+    
+    if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) {
+        renderOnlineUsersAdmin();
+    }
+});
+
+const connectedRef = ref(db, '.info/connected');
+onValue(connectedRef, (snap) => {
+    if (snap.val() === true && currentUser) {
+        setOnlineStatus();
+    }
+});
+
+function setOnlineStatus() {
+    if (!currentUser) return;
+    if (myOnlineRef) {
+        onDisconnect(myOnlineRef).cancel(); // Отменяем старый дисконнект, если был
+    }
+    myOnlineRef = ref(db, `online_users/${currentUser.uid}`);
+    onDisconnect(myOnlineRef).remove().then(() => {
+        set(myOnlineRef, { name: currentUser.name, time: Date.now() });
+    });
+}
 
 // --- СИСТЕМА ЛОГОВ ---
 function addLog(text) {
@@ -127,7 +160,7 @@ function renderChat(messagesObj) {
         // Защита от HTML-инъекций
         let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         // Отмечание @пользователь
-        safeText = safeText.replace(/@([a-zA-Z0-9_а-яА-ЯёЁ]+)/g, '<span class="mention">@$1</span>');
+        safeText = safeText.replace(/@([a-zA-Z0-9_а-яА-ЯёЁ]+)/g, '<span class="mention" onclick="document.getElementById(\'chatInput\').value += \'@$1 \'">@$1</span>');
         // Хештеги #тег
         safeText = safeText.replace(/#([a-zA-Z0-9_а-яА-ЯёЁ]+)/g, '<span class="hashtag">#$1</span>');
         return safeText;
@@ -157,7 +190,7 @@ function renderChat(messagesObj) {
             <div class="msg">
                 <div class="msg-header">
                     <span class="badge badge-${userRole}">${roleName}</span>
-                    <span class="msg-author">${m.u}</span>
+                    <span class="msg-author" onclick="document.getElementById('chatInput').value += '@${m.u} '" style="cursor:pointer;" title="Упомянуть">${m.u}</span>
                     <span class="msg-time">${timeStr}</span>
                 </div>
                 <div class="msg-text">${formatTags(m.t)}</div> <div class="msg-footer">
@@ -229,7 +262,12 @@ window.handleAuth = async () => {
 };
 
 window.loginWithSteam = () => window.location.href = "https://hurus-backend.onrender.com/auth/steam";
-window.logout = () => { localStorage.removeItem('hurus_session'); location.reload(); };
+
+window.logout = async () => { 
+    if (myOnlineRef) await remove(myOnlineRef);
+    localStorage.removeItem('hurus_session'); 
+    location.reload(); 
+};
 
 function updateUI() {
     const isAdmin = ['admin', 'moder'].includes(currentUser.role);
@@ -288,6 +326,23 @@ window.renderAdmin = () => {
     `).join('');
     
     renderLogs();
+    renderOnlineUsersAdmin();
+};
+
+window.renderOnlineUsersAdmin = () => {
+    const countEl = document.getElementById('onlineCount');
+    const listEl = document.getElementById('adminOnlineUsers');
+    if (!countEl || !listEl) return;
+
+    countEl.innerText = onlineUsersList.length;
+    
+    if (onlineUsersList.length === 0) {
+        listEl.innerHTML = '<span style="color: var(--text-dim);">Нет онлайн пользователей</span>';
+    } else {
+        listEl.innerHTML = onlineUsersList.map(name => 
+            `<span class="online-tag"><i class="fas fa-circle" style="font-size: 8px; color: var(--success); margin-right: 6px;"></i>${name}</span>`
+        ).join('');
+    }
 };
 
 window.addBalance = (uid) => {
