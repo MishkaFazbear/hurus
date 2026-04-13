@@ -91,8 +91,132 @@ header { background: rgba(11, 11, 15, 0.95); backdrop-filter: blur(10px); border
     transform: scale(1.1);
 }
 
-.main-layout { display: grid; grid-template-columns: 1fr 340px; gap: 30px; margin-top: 40px; }
+/* --- Делаем чат шире (400px вместо 340px) --- */
+.main-layout { display: grid; grid-template-columns: 1fr 400px; gap: 30px; margin-top: 40px; }
 
+/* --- НОВЫЙ ДИЗАЙН ЧАТА --- */
+.chat-container { 
+    background: rgba(20, 20, 29, 0.75); 
+    backdrop-filter: blur(15px);
+    border-radius: 20px; 
+    border: 1px solid rgba(157, 80, 187, 0.3); /* Легкая фиолетовая обводка */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(157, 80, 187, 0.05);
+    height: calc(100vh - 120px); 
+    max-height: 800px; 
+    min-height: 400px;
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    position: sticky; 
+    top: 100px; 
+}
+
+.chat-header { 
+    padding: 15px 20px; 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+    display: flex; 
+    gap: 10px; 
+    background: rgba(0, 0, 0, 0.4); 
+}
+
+.chat-messages { 
+    flex: 1; 
+    padding: 20px; 
+    overflow-y: auto; 
+    font-size: 14px; 
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Воздушные отступы между сообщениями */
+}
+
+/* Красивые плашки для сообщений */
+.msg { 
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.02);
+    border-radius: 14px;
+    padding: 12px 15px;
+    line-height: 1.5; 
+    transition: 0.3s;
+}
+
+.msg:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(157, 80, 187, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Подсветка собственных сообщений (понадобится правка в JS, см. ниже) */
+.msg-self {
+    background: rgba(157, 80, 187, 0.08);
+    border: 1px solid rgba(157, 80, 187, 0.2);
+    border-left: 3px solid var(--primary);
+}
+
+.msg-header { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px;
+    margin-bottom: 8px; 
+    flex-wrap: wrap;
+}
+
+.msg-author {
+    font-weight: 800;
+    color: #fff;
+}
+
+.msg-time { 
+    margin-left: auto; 
+    font-size: 11px; 
+    color: var(--text-dim); 
+}
+
+.msg-text { 
+    color: #cbd5e1; /* Более мягкий цвет текста, чтобы не резало глаза */
+    word-wrap: break-word;
+}
+
+.chat-footer { 
+    padding: 15px 20px; 
+    display: flex; 
+    gap: 12px; 
+    background: rgba(0, 0, 0, 0.4);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chat-footer input { 
+    flex: 1; 
+    background: rgba(0, 0, 0, 0.5); 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    color: #fff; 
+    padding: 12px 15px; 
+    border-radius: 12px; 
+    transition: 0.3s;
+}
+
+.chat-footer input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(157, 80, 187, 0.2);
+}
+
+.chat-footer button { 
+    background: var(--primary-grad); 
+    border: none; 
+    color: #fff; 
+    width: 44px; 
+    height: 44px; /* Делаем кнопку квадратной */
+    border-radius: 12px; 
+    cursor: pointer; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+}
+
+.chat-footer button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(157, 80, 187, 0.4);
+}
 /* СЕРВЕРА */
 .server-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 .server-card { background: var(--card); border-radius: 15px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; }
@@ -461,4 +585,21 @@ emoji-picker {
 .pm-start {
     color: var(--text-dim);
     font-size: 12px;
+}
+.avatar-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.unread-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background-color: var(--danger); /* Красный цвет из ваших переменных */
+    border: 2px solid var(--card);
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    z-index: 10;
 }
