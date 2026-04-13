@@ -32,6 +32,17 @@ let processedMessages = new Set();
 let unreadMentions = { global: 0, cats: 0 };
 let currentPMTarget = null;
 let currentPMUnsubscribe = null;
+let unreadPMs = {};
+
+// Функция прослушивания непрочитанных ЛС
+function initPMListener() {
+    if (!currentUser) return;
+    onValue(ref(db, `unread_pms/${currentUser.name}`), (snap) => {
+        unreadPMs = snap.val() || {};
+        updateTabsUI();
+        if (currentChatTab === 'pm_list') renderPMList();
+    });
+}
 
 // --- ПЕРЕМЕННЫЕ ДЛЯ ОНЛАЙНА ---
 let onlineUsersList = [];
@@ -40,9 +51,27 @@ let myOnlineRef = null;
 // --- 1. ОБРАБОТКА ВОЗВРАТА ИЗ STEAM ---
 const urlParams = new URLSearchParams(window.location.search);
 const steamNick = urlParams.get('nickname') || urlParams.get('name'); 
+const steamAvatar = urlParams.get('avatar');
 if (steamNick) {
     localStorage.setItem('hurus_session', steamNick);
     window.history.replaceState({}, document.title, window.location.pathname);
+    
+    // Возвращаем старую логику: регаем юзера в БД, если его еще нет
+    get(ref(db, 'users')).then(snapshot => {
+        const users = snapshot.val() || {};
+        const exists = Object.values(users).some(u => u.name === steamNick);
+        if (!exists) {
+            push(ref(db, 'users'), { 
+                name: steamNick, 
+                pass: 'steam', 
+                balance: 0, 
+                role: 'user', 
+                avatar: steamAvatar || '' 
+            }).then(() => location.reload()); // Перезагружаем для подгрузки
+        } else {
+            location.reload();
+        }
+    });
 }
 
 // --- СИНХРОНИЗАЦИЯ ПОЛЬЗОВАТЕЛЕЙ ---
@@ -54,9 +83,13 @@ onValue(ref(db, 'users'), (snapshot) => {
     if (savedNick) {
         const found = allUsers.find(u => u.name === savedNick);
         if (found) {
+            const isFirstLoad = !currentUser;
             currentUser = found;
             updateUI();
-            setOnlineStatus();
+            if (isFirstLoad) {
+                setOnlineStatus();
+                initPMListener(); // Запускаем отслеживание ЛС
+            }
         }
     }
     
@@ -170,6 +203,8 @@ function subscribeToPM(targetUser) {
     currentPMUnsubscribe = onValue(pmQuery, (snapshot) => {
         if (currentChatTab === 'pm' && currentPMTarget === targetUser) {
             renderChat(snapshot.val() || {});
+            // Очищаем, если мы находимся прямо в чате
+            remove(ref(db, `unread_pms/${currentUser.name}/${targetUser}`));
         }
     });
 }
@@ -190,11 +225,13 @@ window.renderPMList = () => {
 
     pmListBox.innerHTML = usersToShow.map(u => {
         const isOnline = onlineUsersList.includes(u.name);
+        const hasUnread = unreadPMs[u.name] ? `<div class="unread-dot"></div>` : '';
         return `
             <div class="pm-user-item" onclick="switchChat('pm', '${u.name}')">
-                <div class="pm-avatar">
+                <div class="pm-avatar avatar-wrapper">
                     ${u.avatar ? `<img src="${u.avatar}">` : `<i class="fas fa-user"></i>`}
                     ${isOnline ? `<div class="online-dot"></div>` : ''}
+                    ${hasUnread}
                 </div>
                 <div class="pm-name">${u.name}</div>
                 <div class="pm-start"><i class="fas fa-chevron-right"></i></div>
@@ -239,6 +276,9 @@ window.updateTabsUI = () => {
         if(pmTab) {
             pmTab.style.color = currentChatTab === 'pm_list' ? 'var(--success)' : 'var(--text-dim)';
             pmTab.style.borderBottom = currentChatTab === 'pm_list' ? '2px solid var(--success)' : 'none';
+            let totalUnread = Object.keys(unreadPMs).length;
+            let badge = totalUnread > 0 ? `<span class="mention-badge">${totalUnread}</span>` : '';
+            pmTab.innerHTML = `ЛС ${badge}`;
         }
     }
 };
@@ -256,6 +296,9 @@ window.switchChat = (tab, targetUser = null) => {
         renderPMList();
     } else if (tab === 'pm') {
         currentPMTarget = targetUser;
+        if (currentUser && targetUser) {
+            remove(ref(db, `unread_pms/${currentUser.name}/${targetUser}`)); // Очищаем при входе
+        }
         msgBox.style.display = 'block';
         pmListBox.style.display = 'none';
         footer.style.display = 'flex';
@@ -391,6 +434,8 @@ window.sendChatMessage = () => {
     else if (currentChatTab === 'pm' && currentPMTarget) {
         const chatId = [currentUser.name, currentPMTarget].sort().join('_');
         dbPath = `pms/${chatId}`;
+        // Ставим пользователю флаг, что у него новое сообщение от нас
+        set(ref(db, `unread_pms/${currentPMTarget}/${currentUser.name}`), true);
     } else return;
 
     push(ref(db, dbPath), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
