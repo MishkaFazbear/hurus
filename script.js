@@ -27,9 +27,11 @@ let globalMessages = {};
 let catMessages = {};
 const catUsers = ['mishkafazbear', 'amonphous', 'SharizMound', 'hurus'];
 
-// --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ПИНГОВ ---
+// --- ПЕРЕМЕННЫЕ ДЛЯ ПИНГОВ И ЛС ---
 let processedMessages = new Set();
 let unreadMentions = { global: 0, cats: 0 };
+let currentPMTarget = null;
+let currentPMUnsubscribe = null;
 
 // --- ПЕРЕМЕННЫЕ ДЛЯ ОНЛАЙНА ---
 let onlineUsersList = [];
@@ -61,13 +63,14 @@ onValue(ref(db, 'users'), (snapshot) => {
     if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) {
         renderAdmin();
     }
+    if (currentChatTab === 'pm_list') renderPMList();
 });
 
 // --- СИНХРОНИЗАЦИЯ ГЛОБАЛЬНОГО ЧАТА ---
 const globalChatQuery = query(ref(db, 'messages'), limitToLast(50));
 onValue(globalChatQuery, (snapshot) => {
     globalMessages = snapshot.val() || {};
-    processMentions('global', globalMessages); // Проверка пингов
+    processMentions('global', globalMessages);
     if (currentChatTab === 'global') renderChat(globalMessages);
 });
 
@@ -75,7 +78,7 @@ onValue(globalChatQuery, (snapshot) => {
 const catChatQuery = query(ref(db, 'cat_messages'), limitToLast(50));
 onValue(catChatQuery, (snapshot) => {
     catMessages = snapshot.val() || {};
-    processMentions('cats', catMessages); // Проверка пингов
+    processMentions('cats', catMessages);
     if (currentChatTab === 'cats') renderChat(catMessages);
 });
 
@@ -92,7 +95,6 @@ function processMentions(chatTab, messagesObj) {
     Object.entries(messagesObj).forEach(([id, m]) => {
         if (!processedMessages.has(id)) {
             processedMessages.add(id);
-            // Если сообщение в другом табе и там есть наш ник
             if (currentChatTab !== chatTab && m.t && m.t.includes(myMention)) {
                 unreadMentions[chatTab]++;
                 updated = true;
@@ -120,6 +122,7 @@ onValue(ref(db, 'online_users'), (snapshot) => {
     if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) {
         renderOnlineUsersAdmin();
     }
+    if (currentChatTab === 'pm_list') renderPMList();
 });
 
 const connectedRef = ref(db, '.info/connected');
@@ -156,30 +159,118 @@ function renderLogs() {
     }).join('');
 }
 
+// --- ЛИЧНЫЕ СООБЩЕНИЯ (ЛС) ---
+function subscribeToPM(targetUser) {
+    if (!currentUser) return;
+    if (currentPMUnsubscribe) currentPMUnsubscribe(); // Отписка от предыдущего чата ЛС
+    
+    const chatId = [currentUser.name, targetUser].sort().join('_');
+    const pmQuery = query(ref(db, `pms/${chatId}`), limitToLast(50));
+    
+    currentPMUnsubscribe = onValue(pmQuery, (snapshot) => {
+        if (currentChatTab === 'pm' && currentPMTarget === targetUser) {
+            renderChat(snapshot.val() || {});
+        }
+    });
+}
+
+window.renderPMList = () => {
+    const pmListBox = document.getElementById('pmList');
+    if (!currentUser) {
+        pmListBox.innerHTML = '<div style="color:var(--text-dim); text-align:center; margin-top:20px;">Войдите в аккаунт, чтобы писать ЛС</div>';
+        return;
+    }
+
+    const usersToShow = allUsers.filter(u => u.name !== currentUser.name);
+
+    if (usersToShow.length === 0) {
+        pmListBox.innerHTML = '<div style="color:var(--text-dim); text-align:center; margin-top:20px;">Нет зарегистрированных пользователей</div>';
+        return;
+    }
+
+    pmListBox.innerHTML = usersToShow.map(u => {
+        const isOnline = onlineUsersList.includes(u.name);
+        return `
+            <div class="pm-user-item" onclick="switchChat('pm', '${u.name}')">
+                <div class="pm-avatar">
+                    ${u.avatar ? `<img src="${u.avatar}">` : `<i class="fas fa-user"></i>`}
+                    ${isOnline ? `<div class="online-dot"></div>` : ''}
+                </div>
+                <div class="pm-name">${u.name}</div>
+                <div class="pm-start"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        `;
+    }).join('');
+};
+
 // --- УПРАВЛЕНИЕ ТАБАМИ ---
 window.updateTabsUI = () => {
     const globalTab = document.getElementById('tab-global');
-    if (globalTab) {
-        globalTab.style.color = currentChatTab === 'global' ? 'var(--primary)' : 'var(--text-dim)';
-        globalTab.style.borderBottom = currentChatTab === 'global' ? '2px solid var(--primary)' : 'none';
-        let badge = unreadMentions.global > 0 ? `<span class="mention-badge">${unreadMentions.global}</span>` : '';
-        globalTab.innerHTML = `Глобальный ${badge}`;
-    }
-    
     const catTab = document.getElementById('tab-cats');
-    if (catTab) {
-        catTab.style.color = currentChatTab === 'cats' ? '#ff66b2' : 'var(--text-dim)';
-        catTab.style.borderBottom = currentChatTab === 'cats' ? '2px solid #ff66b2' : 'none';
-        let badge = unreadMentions.cats > 0 ? `<span class="mention-badge">${unreadMentions.cats}</span>` : '';
-        catTab.innerHTML = `Чат Котиков <3 ${badge}`;
+    const pmTab = document.getElementById('tab-pm');
+    const backBtn = document.getElementById('btnBackPM');
+    const titlePM = document.getElementById('titlePM');
+    const chatTabs = document.getElementById('chatTabs');
+
+    if (currentChatTab === 'pm') {
+        chatTabs.style.display = 'none';
+        backBtn.style.display = 'block';
+        titlePM.style.display = 'flex';
+        titlePM.innerHTML = `Диалог с <span style="color:var(--primary); margin-left:5px;">${currentPMTarget}</span>`;
+    } else {
+        chatTabs.style.display = 'flex';
+        backBtn.style.display = 'none';
+        titlePM.style.display = 'none';
+
+        if(globalTab) {
+            globalTab.style.color = currentChatTab === 'global' ? 'var(--primary)' : 'var(--text-dim)';
+            globalTab.style.borderBottom = currentChatTab === 'global' ? '2px solid var(--primary)' : 'none';
+            let badge = unreadMentions.global > 0 ? `<span class="mention-badge">${unreadMentions.global}</span>` : '';
+            globalTab.innerHTML = `Глобальный ${badge}`;
+        }
+        
+        if(catTab) {
+            catTab.style.color = currentChatTab === 'cats' ? '#ff66b2' : 'var(--text-dim)';
+            catTab.style.borderBottom = currentChatTab === 'cats' ? '2px solid #ff66b2' : 'none';
+            let badge = unreadMentions.cats > 0 ? `<span class="mention-badge">${unreadMentions.cats}</span>` : '';
+            catTab.innerHTML = `Чат Котиков <3 ${badge}`;
+        }
+
+        if(pmTab) {
+            pmTab.style.color = currentChatTab === 'pm_list' ? 'var(--success)' : 'var(--text-dim)';
+            pmTab.style.borderBottom = currentChatTab === 'pm_list' ? '2px solid var(--success)' : 'none';
+        }
     }
 };
 
-window.switchChat = (tab) => {
+window.switchChat = (tab, targetUser = null) => {
     currentChatTab = tab;
-    unreadMentions[tab] = 0; // Сбрасываем счетчик при переходе
+    const msgBox = document.getElementById('chatMessages');
+    const pmListBox = document.getElementById('pmList');
+    const footer = document.querySelector('.chat-footer');
+
+    if (tab === 'pm_list') {
+        msgBox.style.display = 'none';
+        pmListBox.style.display = 'block';
+        footer.style.display = 'none';
+        renderPMList();
+    } else if (tab === 'pm') {
+        currentPMTarget = targetUser;
+        msgBox.style.display = 'block';
+        pmListBox.style.display = 'none';
+        footer.style.display = 'flex';
+        subscribeToPM(targetUser);
+    } else {
+        currentPMTarget = null;
+        if (currentPMUnsubscribe) { currentPMUnsubscribe(); currentPMUnsubscribe = null; }
+        msgBox.style.display = 'block';
+        pmListBox.style.display = 'none';
+        footer.style.display = 'flex';
+        
+        unreadMentions[tab] = 0; 
+        renderChat(tab === 'global' ? globalMessages : catMessages);
+    }
     updateTabsUI();
-    renderChat(tab === 'global' ? globalMessages : catMessages);
 };
 
 // --- ЧАТ И РЕАКЦИИ ---
@@ -210,11 +301,14 @@ function renderChat(messagesObj) {
             }).join('');
         }
 
+        const isMe = currentUser && m.u === currentUser.name;
+
         return `
             <div class="msg">
                 <div class="msg-header">
                     <span class="badge badge-${userRole}">${userRole.toUpperCase()}</span>
                     <span class="msg-author" onclick="document.getElementById('chatInput').value += '@${m.u} '" style="cursor:pointer;">${m.u}</span>
+                    ${!isMe ? `<i class="fas fa-envelope pm-icon" onclick="switchChat('pm', '${m.u}')" title="Написать в ЛС"></i>` : ''}
                     <span class="msg-time">${timeStr}</span>
                 </div>
                 <div class="msg-text">${formatTags(m.t)}</div>
@@ -269,8 +363,16 @@ window.insertMention = (name) => {
 
 window.toggleReaction = async (msgId, emoji) => {
     if (!currentUser) return notify("Сначала войдите!");
-    const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
-    const reactRef = ref(db, `${dbPath}/${msgId}/reactions/${emoji}/${currentUser.name}`);
+    
+    let dbPath = '';
+    if (currentChatTab === 'global') dbPath = `messages/${msgId}/reactions/${emoji}/${currentUser.name}`;
+    else if (currentChatTab === 'cats') dbPath = `cat_messages/${msgId}/reactions/${emoji}/${currentUser.name}`;
+    else if (currentChatTab === 'pm' && currentPMTarget) {
+        const chatId = [currentUser.name, currentPMTarget].sort().join('_');
+        dbPath = `pms/${chatId}/${msgId}/reactions/${emoji}/${currentUser.name}`;
+    } else return;
+
+    const reactRef = ref(db, dbPath);
     const snap = await get(reactRef);
     if (snap.exists()) {
         remove(reactRef);
@@ -282,9 +384,21 @@ window.toggleReaction = async (msgId, emoji) => {
 window.sendChatMessage = () => {
     const inp = document.getElementById('chatInput');
     if (!currentUser || !inp.value.trim()) return;
-    const dbPath = currentChatTab === 'global' ? 'messages' : 'cat_messages';
+    
+    let dbPath = '';
+    if (currentChatTab === 'global') dbPath = 'messages';
+    else if (currentChatTab === 'cats') dbPath = 'cat_messages';
+    else if (currentChatTab === 'pm' && currentPMTarget) {
+        const chatId = [currentUser.name, currentPMTarget].sort().join('_');
+        dbPath = `pms/${chatId}`;
+    } else return;
+
     push(ref(db, dbPath), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
-    addLog(`Пользователь ${currentUser.name} написал в ${currentChatTab === 'global' ? 'глобальный чат' : 'чат котиков'}: ${inp.value}`);
+    
+    if (currentChatTab !== 'pm') {
+        addLog(`Пользователь ${currentUser.name} написал в ${currentChatTab === 'global' ? 'глобальный чат' : 'чат котиков'}: ${inp.value}`);
+    }
+    
     inp.value = '';
     document.getElementById('mentionPopup').style.display = 'none';
 };
@@ -343,7 +457,12 @@ function updateUI() {
     const chatTabs = document.getElementById('chatTabs');
     if (catUsers.includes(currentUser.name)) {
         if (!document.getElementById('tab-cats')) {
-            chatTabs.innerHTML += `<button id="tab-cats" onclick="switchChat('cats')" style="background: none; border: none; color: var(--text-dim); cursor: pointer; font-weight: 800; padding: 5px; margin-left: 10px;">Чат Котиков <3</button>`;
+            const btn = document.createElement('button');
+            btn.id = 'tab-cats';
+            btn.innerHTML = 'Чат Котиков <3';
+            btn.style.cssText = 'background: none; border: none; color: var(--text-dim); cursor: pointer; font-weight: 800; padding: 5px; margin-left: 10px;';
+            btn.onclick = () => switchChat('cats');
+            chatTabs.appendChild(btn);
         }
     } else {
         const catTab = document.getElementById('tab-cats');
@@ -446,7 +565,6 @@ document.addEventListener('DOMContentLoaded', () => {
         globalPicker.style.display = 'none';
     });
     
-    // Закрытие попапа пингов при клике вне
     document.addEventListener('click', (e) => {
         const popup = document.getElementById('mentionPopup');
         if (popup && e.target.id !== 'chatInput' && !e.target.closest('.mention-option')) {

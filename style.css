@@ -360,3 +360,105 @@ emoji-picker {
     background: rgba(157, 80, 187, 0.15);
     color: var(--primary);
 }
+/* --- СТИЛИ ДЛЯ ЛИЧНЫХ СООБЩЕНИЙ (ЛС) --- */
+
+.pm-icon {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-left: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+    vertical-align: middle;
+}
+
+.pm-icon:hover {
+    color: var(--success);
+    transform: scale(1.1);
+}
+
+.btn-back-pm {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    cursor: pointer;
+    border-radius: 8px;
+    width: 30px;
+    height: 30px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
+.btn-back-pm:hover {
+    color: #fff;
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+#pmList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: none;
+}
+
+.pm-user-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    border: 1px solid transparent;
+    margin-bottom: 5px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.pm-user-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--border);
+}
+
+.pm-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+}
+
+.pm-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.pm-user-item .online-dot {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background: var(--success);
+    border: 2px solid var(--card);
+    border-radius: 50%;
+}
+
+.pm-name {
+    flex: 1;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.pm-start {
+    color: var(--text-dim);
+    font-size: 12px;
+}
