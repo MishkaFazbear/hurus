@@ -333,6 +333,12 @@ function renderChat(messagesObj) {
         const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const userRole = m.r || 'user';
         
+        // --- ДОБАВЛЕНИЕ ПРИПИСКИ К НИКУ ---
+        let displayName = m.u;
+        if (m.u === 'mishkafazbear') {
+            displayName += ' <span style="color: #ff4444; font-size: 0.8em; font-weight: normal;">(фу таким быть)</span>';
+        }
+
         let reactHtml = '';
         if (m.reactions) {
             reactHtml = Object.entries(m.reactions).map(([emoji, users]) => {
@@ -350,7 +356,7 @@ function renderChat(messagesObj) {
             <div class="msg">
                 <div class="msg-header">
                     <span class="badge badge-${userRole}">${userRole.toUpperCase()}</span>
-                    <span class="msg-author" onclick="document.getElementById('chatInput').value += '@${m.u} '" style="cursor:pointer;">${m.u}</span>
+                    <span class="msg-author" onclick="document.getElementById('chatInput').value += '@${m.u} '" style="cursor:pointer;">${displayName}</span>
                     ${!isMe ? `<i class="fas fa-envelope pm-icon" onclick="switchChat('pm', '${m.u}')" title="Написать в ЛС"></i>` : ''}
                     <span class="msg-time">${timeStr}</span>
                 </div>
