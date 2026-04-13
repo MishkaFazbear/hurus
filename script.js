@@ -32,17 +32,6 @@ let processedMessages = new Set();
 let unreadMentions = { global: 0, cats: 0 };
 let currentPMTarget = null;
 let currentPMUnsubscribe = null;
-let unreadPMs = {};
-
-// Функция прослушивания непрочитанных ЛС
-function initPMListener() {
-    if (!currentUser) return;
-    onValue(ref(db, `unread_pms/${currentUser.name}`), (snap) => {
-        unreadPMs = snap.val() || {};
-        updateTabsUI();
-        if (currentChatTab === 'pm_list') renderPMList();
-    });
-}
 
 // --- ПЕРЕМЕННЫЕ ДЛЯ ОНЛАЙНА ---
 let onlineUsersList = [];
@@ -51,27 +40,9 @@ let myOnlineRef = null;
 // --- 1. ОБРАБОТКА ВОЗВРАТА ИЗ STEAM ---
 const urlParams = new URLSearchParams(window.location.search);
 const steamNick = urlParams.get('nickname') || urlParams.get('name'); 
-const steamAvatar = urlParams.get('avatar');
 if (steamNick) {
     localStorage.setItem('hurus_session', steamNick);
     window.history.replaceState({}, document.title, window.location.pathname);
-    
-    // Возвращаем старую логику: регаем юзера в БД, если его еще нет
-    get(ref(db, 'users')).then(snapshot => {
-        const users = snapshot.val() || {};
-        const exists = Object.values(users).some(u => u.name === steamNick);
-        if (!exists) {
-            push(ref(db, 'users'), { 
-                name: steamNick, 
-                pass: 'steam', 
-                balance: 0, 
-                role: 'user', 
-                avatar: steamAvatar || '' 
-            }).then(() => location.reload()); // Перезагружаем для подгрузки
-        } else {
-            location.reload();
-        }
-    });
 }
 
 // --- СИНХРОНИЗАЦИЯ ПОЛЬЗОВАТЕЛЕЙ ---
@@ -83,13 +54,9 @@ onValue(ref(db, 'users'), (snapshot) => {
     if (savedNick) {
         const found = allUsers.find(u => u.name === savedNick);
         if (found) {
-            const isFirstLoad = !currentUser;
             currentUser = found;
             updateUI();
-            if (isFirstLoad) {
-                setOnlineStatus();
-                initPMListener(); // Запускаем отслеживание ЛС
-            }
+            setOnlineStatus();
         }
     }
     
@@ -203,8 +170,6 @@ function subscribeToPM(targetUser) {
     currentPMUnsubscribe = onValue(pmQuery, (snapshot) => {
         if (currentChatTab === 'pm' && currentPMTarget === targetUser) {
             renderChat(snapshot.val() || {});
-            // Очищаем, если мы находимся прямо в чате
-            remove(ref(db, `unread_pms/${currentUser.name}/${targetUser}`));
         }
     });
 }
@@ -225,13 +190,11 @@ window.renderPMList = () => {
 
     pmListBox.innerHTML = usersToShow.map(u => {
         const isOnline = onlineUsersList.includes(u.name);
-        const hasUnread = unreadPMs[u.name] ? `<div class="unread-dot"></div>` : '';
         return `
             <div class="pm-user-item" onclick="switchChat('pm', '${u.name}')">
-                <div class="pm-avatar avatar-wrapper">
+                <div class="pm-avatar">
                     ${u.avatar ? `<img src="${u.avatar}">` : `<i class="fas fa-user"></i>`}
                     ${isOnline ? `<div class="online-dot"></div>` : ''}
-                    ${hasUnread}
                 </div>
                 <div class="pm-name">${u.name}</div>
                 <div class="pm-start"><i class="fas fa-chevron-right"></i></div>
@@ -276,9 +239,6 @@ window.updateTabsUI = () => {
         if(pmTab) {
             pmTab.style.color = currentChatTab === 'pm_list' ? 'var(--success)' : 'var(--text-dim)';
             pmTab.style.borderBottom = currentChatTab === 'pm_list' ? '2px solid var(--success)' : 'none';
-            let totalUnread = Object.keys(unreadPMs).length;
-            let badge = totalUnread > 0 ? `<span class="mention-badge">${totalUnread}</span>` : '';
-            pmTab.innerHTML = `ЛС ${badge}`;
         }
     }
 };
@@ -296,9 +256,6 @@ window.switchChat = (tab, targetUser = null) => {
         renderPMList();
     } else if (tab === 'pm') {
         currentPMTarget = targetUser;
-        if (currentUser && targetUser) {
-            remove(ref(db, `unread_pms/${currentUser.name}/${targetUser}`)); // Очищаем при входе
-        }
         msgBox.style.display = 'block';
         pmListBox.style.display = 'none';
         footer.style.display = 'flex';
@@ -333,12 +290,6 @@ function renderChat(messagesObj) {
         const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const userRole = m.r || 'user';
         
-        // --- ДОБАВЛЕНИЕ ПРИПИСКИ К НИКУ ---
-        let displayName = m.u;
-        if (m.u === 'mishkafazbear') {
-            displayName += ' <span style="color: #ff4444; font-size: 0.8em; font-weight: normal;">(фу таким быть)</span>';
-        }
-
         let reactHtml = '';
         if (m.reactions) {
             reactHtml = Object.entries(m.reactions).map(([emoji, users]) => {
@@ -356,7 +307,7 @@ function renderChat(messagesObj) {
             <div class="msg">
                 <div class="msg-header">
                     <span class="badge badge-${userRole}">${userRole.toUpperCase()}</span>
-                    <span class="msg-author" onclick="document.getElementById('chatInput').value += '@${m.u} '" style="cursor:pointer;">${displayName}</span>
+                    <span class="msg-author" onclick="document.getElementById('chatInput').value += '@${m.u} '" style="cursor:pointer;">${m.u}</span>
                     ${!isMe ? `<i class="fas fa-envelope pm-icon" onclick="switchChat('pm', '${m.u}')" title="Написать в ЛС"></i>` : ''}
                     <span class="msg-time">${timeStr}</span>
                 </div>
@@ -440,8 +391,6 @@ window.sendChatMessage = () => {
     else if (currentChatTab === 'pm' && currentPMTarget) {
         const chatId = [currentUser.name, currentPMTarget].sort().join('_');
         dbPath = `pms/${chatId}`;
-        // Ставим пользователю флаг, что у него новое сообщение от нас
-        set(ref(db, `unread_pms/${currentPMTarget}/${currentUser.name}`), true);
     } else return;
 
     push(ref(db, dbPath), { u: currentUser.name, r: currentUser.role, t: inp.value, time: Date.now() });
