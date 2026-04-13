@@ -138,12 +138,19 @@
     <aside class="chat-sidebar">
         <div class="chat-container">
             <div class="chat-header" id="chatTabs">
-                <button id="tab-global" onclick="switchChat('global')" style="background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 800; border-bottom: 2px solid var(--primary); padding: 5px;">Глобальный</button>
+                <button id="tab-global" onclick="switchChat('global')" style="background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 800; border-bottom: 2px solid var(--primary); padding: 5px;">
+                    Глобальный <span id="badge-global" class="ping-badge" style="display:none;">0</span>
+                </button>
             </div>
             
             <div class="chat-messages" id="chatMessages"></div>
-            <div class="chat-footer">
-                <input type="text" id="chatInput" placeholder="Сообщение..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+            
+            <div class="chat-footer" style="position: relative;">
+                <div id="mentionPopup" class="mention-popup"></div>
+                
+                <input type="text" id="chatInput" placeholder="Сообщение..." 
+                       oninput="handleInputMentions()" 
+                       onkeydown="if(event.key==='Enter') sendChatMessage()">
                 <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>

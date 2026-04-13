@@ -135,20 +135,54 @@ function renderLogs() {
 }
 
 // --- ЧАТ И РЕАКЦИИ ---
-window.switchChat = (tab) => {
-    currentChatTab = tab;
-    
-    document.getElementById('tab-global').style.color = tab === 'global' ? 'var(--primary)' : 'var(--text-dim)';
-    document.getElementById('tab-global').style.borderBottom = tab === 'global' ? '2px solid var(--primary)' : 'none';
+window.updateTabsUI = () => {
+    const globalTab = document.getElementById('tab-global');
+    if (globalTab) {
+        globalTab.style.color = currentChatTab === 'global' ? 'var(--primary)' : 'var(--text-dim)';
+        globalTab.style.borderBottom = currentChatTab === 'global' ? '2px solid var(--primary)' : 'none';
+        let badge = unreadMentions.global > 0 ? `<span class="mention-badge">${unreadMentions.global}</span>` : '';
+        globalTab.innerHTML = `Глобальный ${badge}`;
+    }
     
     const catTab = document.getElementById('tab-cats');
     if (catTab) {
-        catTab.style.color = tab === 'cats' ? '#ff66b2' : 'var(--text-dim)';
-        catTab.style.borderBottom = tab === 'cats' ? '2px solid #ff66b2' : 'none';
+        catTab.style.color = currentChatTab === 'cats' ? '#ff66b2' : 'var(--text-dim)';
+        catTab.style.borderBottom = currentChatTab === 'cats' ? '2px solid #ff66b2' : 'none';
+        let badge = unreadMentions.cats > 0 ? `<span class="mention-badge">${unreadMentions.cats}</span>` : '';
+        catTab.innerHTML = `Чат Котиков <3 ${badge}`;
     }
+};
 
+window.switchChat = (tab) => {
+    currentChatTab = tab;
+    unreadMentions[tab] = 0; // Сбрасываем пинги при открытии таба
+    updateTabsUI();
     renderChat(tab === 'global' ? globalMessages : catMessages);
 };
+
+// Функция проверки новых пингов
+function processMentions(chatTab, messagesObj) {
+    if (!currentUser) {
+        Object.keys(messagesObj).forEach(id => processedMessages.add(id));
+        return;
+    }
+    
+    const myMention = `@${currentUser.name}`;
+    let updated = false;
+
+    Object.entries(messagesObj).forEach(([id, m]) => {
+        if (!processedMessages.has(id)) {
+            processedMessages.add(id);
+            // Если сообщение пришло не в текущий открытый чат и содержит наш ник
+            if (currentChatTab !== chatTab && m.t && m.t.includes(myMention)) {
+                unreadMentions[chatTab]++;
+                updated = true;
+            }
+        }
+    });
+
+    if (updated) updateTabsUI();
+}
 
 function renderChat(messagesObj) {
     const box = document.getElementById('chatMessages');
